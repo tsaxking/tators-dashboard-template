@@ -1,8 +1,3 @@
-
-
-
-
-
 import express, { NextFunction } from 'express';
 import { Server } from 'socket.io';
 import * as http from 'http';
@@ -14,8 +9,11 @@ import { Session } from './server-functions/structure/sessions';
 import builder from './server-functions/page-builder';
 import { emailValidation } from './server-functions/middleware/spam-detection';
 import { Worker, isMainThread, workerData, parentPort } from 'worker_threads';
+import { config } from 'dotenv';
 
-require('dotenv').config();
+
+config();
+
 const { PORT, DOMAIN } = process.env;
 
 const [,, env, ...args] = workerData?.args || process.argv;

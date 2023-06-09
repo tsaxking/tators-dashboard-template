@@ -1,0 +1,17 @@
+{
+    "100": {
+        "name": "Unknown Error",
+        "description": "An error has occurred that has not been defined.",
+        "instructions": "Please contact the administrator."
+    },
+    "101": {
+        "name": "Invalid Verification Request",
+        "description": "This happens when you try to verify a user with an invalid verification link.",
+        "instructions": "If it has been over 10 minutes since you requested the verification email, you will need to request a new one by signing in again <a href=\"/login\">here</a>."
+    },
+    "102": {
+        "name": "Invalid Password Request Reset",
+        "description": "This happens when you try to reset a password with an invalid password reset link.",
+        "instructions": "If it has been over 10 minutes since you requested the password reset email, you will need to request a new one by repeating your steps from before."
+    }
+}
