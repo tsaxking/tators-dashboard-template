@@ -1,0 +1,54 @@
+{
+    // ▄▀▄ ▄▀▀ ▄▀▀ ▄▀▄ █ █ █▄ █ ▀█▀ ▄▀▀ 
+    // █▀█ ▀▄▄ ▀▄▄ ▀▄▀ ▀▄█ █ ▀█  █  ▄█▀ 
+
+    "account.invalidUsername": {
+        "title": "Accounts",
+        "message": "Invalid username.",
+        "status": "error",
+        "code": 404,
+        "instructions": ""
+    },
+    "account.notLoggedIn": {
+        "title": "Accounts",
+        "message": "Not logged in.",
+        "status": "error",
+        "code": 401,
+        "instructions": "",
+        "redirect": "/account/sign-in"
+    },
+
+
+
+
+
+
+
+
+
+
+    // █▀▄ ██▀ █▀▄ █▄ ▄█ █ ▄▀▀ ▄▀▀ █ ▄▀▄ █▄ █ ▄▀▀ 
+    // █▀  █▄▄ █▀▄ █ ▀ █ █ ▄█▀ ▄█▀ █ ▀▄▀ █ ▀█ ▄█▀ 
+
+    "permissions.invalid": {
+        "title": "Permissions",
+        "message": "Invalid permissions.",
+        "status": "error",
+        "code": 401,
+        "instructions": "If you are seeing this, you do not have the required permissions to access this resource."
+    },
+    "permissions.error": {
+        "title": "Permissions",
+        "message": "Error checking permissions.",
+        "status": "majorError",
+        "code": 500,
+        "instructions": "If you are seeing this, you do not have the required permissions to access this resource."
+    },
+    "roles.invalid": {
+        "title": "Roles",
+        "message": "Invalid roles.",
+        "status": "error",
+        "code": 401,
+        "instructions": "If you are seeing this, you do not have the required roles to access this resource."
+    }
+}

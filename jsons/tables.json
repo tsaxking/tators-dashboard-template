@@ -567,7 +567,7 @@
                 "description": "The name of the role",
                 "init": "name TEXT NOT NULL UNIQUE"
             },
-            "info": {
+            "permissions": {
                 "type": "json",
                 "edit": true,
                 "description": "Additional information about the role",
@@ -589,66 +589,66 @@
         },
         "rows": [{
             "name": "admin",
-            "info": {
-                "viewData": true,
-                "editDatabase": true,
-                "editPermissions": true,
-                "editRoles": true,
-                "editUsers": true,
-                "viewLogs": true,
-                "verify": true,
-                "editScoutingQuestions": true,
-                "settings": true,
-                "logs": true
-            },
+            "permissions": [
+                "viewData",
+                "editDatabase",
+                "editPermissions",
+                "editRoles",
+                "editUsers",
+                "viewLogs",
+                "verify",
+                "editScoutingQuestions",
+                "settings",
+                "logs"
+            ],
             "description": "Admins have full access to the database",
             "rank": 0
         }, {
             "name": "mentor",
-            "info": {
-                "viewData": true,
-                "editDatabase": true,
-                "editPermissions": true,
-                "verify": true,
-                "editScoutingQuestions": true,
-                "settings": true
-            },
+            "permissions": [
+                "viewData",
+                "editDatabase",
+                "editPermissions",
+                "verify",
+                "editScoutingQuestions",
+                "settings"
+        ],
             "description": "Mentors can view and edit all data, as well as manage permissions",
             "rank": 1
         }, {
             "name": "developer",
-            "info": {
-                "viewData": true,
-                "editDatabase": true,
-                "viewLogs": true,
-                "verify": true,
-                "editScoutingQuestions": true,
-                "settings": true,
-                "logs": true
-            },
+            "permissions": [
+                "viewData",
+                "editDatabase",
+                "viewLogs",
+                "verify",
+                "editScoutingQuestions",
+                "settings",
+                "logs"
+            ],
             "description": "Developers can view logs, edit the database",
             "rank": 1
         }, {
             "name": "scout",
-            "info": {
-                "viewData": true,
-                "verify": true,
-                "settings": true
-            },
+            "permissions":[
+                "viewData",
+                "verify",
+                "settings"
+            ],
             "description": "Scouts can only view and edit their own data",
             "rank": 2
         }, {
             "name": "viewer",
-            "info": {
-                "viewData": true,
-                "verify": true,
-                "settings": true
-            },
+            "permissions": [
+                "viewData",
+                "verify",
+                "settings"
+            ],
             "description": "Viewers can only view data",
             "rank": 3
         }, {
             "name": "user",
-            "info": {},
+            "permissions": [],
             "description": "Users cannot view data",
             "rank": 4
         }],
@@ -967,6 +967,26 @@
                 "primaryKey": true,
                 "description": "The user that answered the question",
                 "init": "user TEXT NOT NULL"
+            }
+        }
+    },
+
+
+
+
+
+    "ids": {
+        "columns": {
+            "id": {
+                "type": "string",
+                "primaryKey": true,
+                "description": "The id",
+                "init": "id TEXT UNIQUE NOT NULL"
+            },
+            "used": {
+                "type": "boolean",
+                "description": "Whether or not the id is used",
+                "init": "used INTEGER NOT NULL"
             }
         }
     }

@@ -6,6 +6,7 @@ import { HTMLElement, parse } from 'node-html-parser';
 import { render } from 'node-html-constructor/versions/v3';
 import callsite from 'callsite';
 import { workerData } from 'worker_threads';
+import ObjectsToCsv from 'objects-to-csv';
 
 
 // console.log(build);
@@ -210,7 +211,7 @@ const buildJSON = getJSONSync('../build/build.json');
  * @param {string} template
  * @returns {*}
  */
-const runBuilds = (template: string) => {
+const runBuilds = (template: string): string => {
     const root = parse(template);
     const insertBefore = (parent: HTMLElement, child: HTMLElement, before: HTMLElement) => {
         parent.childNodes.splice(parent.childNodes.indexOf(before), 0, child);
@@ -782,4 +783,23 @@ export function openAllInFolder(dir: string, cb: FileCb, options: FileOpts = {})
             });
         });
     });
+}
+
+
+export enum LogType {
+    request = 'request',
+    error = 'error',
+    debugger = 'debugger',
+    status = 'status'
+}
+
+export type LogObj = {
+    [key: string]: string|number|boolean|undefined|null;
+}
+
+export async function log(type: LogType, dataObj: LogObj) {
+    return new ObjectsToCsv([dataObj]).toDisk(
+        path.resolve(__dirname, `../logs/${type}.csv`), 
+        { append: true }
+    );
 }

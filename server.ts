@@ -34,6 +34,7 @@ io.on('connection', (socket) => {
     // ▄█▀ ▀▄▀ ▀▄▄ █ █ █▄▄  █  ▄█▀ 
 
 
+    socket.on('ping', () => socket.emit('pong'));
 
 
 
@@ -60,10 +61,7 @@ io.on('connection', (socket) => {
 
 
 
-
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
+    socket.on('disconnect', () => console.log('user disconnected'));
 });
 
 app.use(express.urlencoded({ extended: true }));
@@ -71,7 +69,12 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 app.use('/uploads', express.static(path.resolve(__dirname, './uploads')));
 
-type ExtendedRequest = Request & { io: Server, start: number, ip?: string|null, session: Session };
+export type ExtendedRequest = Request & {
+    io: Server, 
+    start: number, 
+    ip?: string|null, 
+    session: Session 
+};
 
 app.use((req, res, next) => {
     (req as unknown as ExtendedRequest).io = io;
@@ -80,7 +83,7 @@ app.use((req, res, next) => {
     next();
 });
 
-function stripHtml(body) {
+function stripHtml(body: any) {
     let files;
 
     if (body.files) {
@@ -178,7 +181,9 @@ app.post('/*', emailValidation(['email', 'confirmEmail'], {
 
 
 
-
+app.use((req, res, next) => {
+    if ((req as unknown as ExtendedRequest).session.account?.roles.includes('guest')) {}
+});
 
 
 
