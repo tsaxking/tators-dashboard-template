@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from "express";
 import { LogType, getJSONSync, getTemplateSync, log } from "../files";
 import Account from "./accounts";
 import { Email, EmailType } from "./email";
-import { ExtendedRequest } from "../../server";
 import { config } from "dotenv";
 import { Session } from "./sessions";
 
@@ -98,7 +97,7 @@ if (!messages) {
 
 export class Status {
     static middleware(id: string, test: (session: Session) => boolean) {
-        return (req: ExtendedRequest, res: Response, next: NextFunction) => {
+        return (req: Request, res: Response, next: NextFunction) => {
             if (test(req.session)) {
                 next();
             } else {
@@ -113,7 +112,7 @@ export class Status {
 
 
 
-    static from(id: string, req: ExtendedRequest, data?: any): Status {
+    static from(id: string, req: Request, data?: any): Status {
         try {
             data = JSON.stringify(data);
         } catch (e) {
@@ -155,7 +154,7 @@ export class Status {
         public code: ServerCode,
         public instructions: string,
         public redirect: string|boolean = false,
-        public request: ExtendedRequest,
+        public request: Request,
         public data?: string
     ) {
 
@@ -173,7 +172,7 @@ export class Status {
 
 
         // Send email to admins if error
-        if (status === ColorCode.majorError && process.env.SEND_STATUS_EMAILS === '1') {
+        if (status === ColorCode.majorError && process.env.SEND_STATUS_EMAILS === 'TRUE') {
             Account.fromRole('admin')
                 .then(admins => {
                     const email = new Email(
@@ -197,10 +196,6 @@ export class Status {
                 })
                 .catch(console.error);
         }
-    }
-
-    get string() {
-        return JSON.stringify(this.json);
     }
 
     get html() {

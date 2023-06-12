@@ -64,12 +64,13 @@ import { Worker, isMainThread, workerData, parentPort } from 'worker_threads';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import * as ts from 'typescript';
+import '@total-typescript/ts-reset';
 
 
 let server: Worker;
 
 const newServer = async () => {
-    if (server)
+    if (server) server.terminate();
     
 
     

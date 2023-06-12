@@ -2,7 +2,7 @@
 
 
 
-type TBAEvent = {
+type TBA_Event = {
     key: string,
     name: string,
     event_code: string,
@@ -48,9 +48,9 @@ type TBAEvent = {
 
 
 export class FIRSTEvent {
-    info: TBAEvent;
+    info: TBA_Event;
 
-    constructor(event: TBAEvent) {
+    constructor(event: TBA_Event) {
         this.info = event;
     }
 }

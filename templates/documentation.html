@@ -6,12 +6,11 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Team Tators: Documentation</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"> {styles}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"> 
     <link rel="stylesheet" href="../static/css/prism.css">
 </head>
 
 <body>
-    {topScripts}
     <!-- <cstr cstr-type="repeat" id="topScriptsRepeat">
         <script src="{path}"></script>
     </cstr> -->
@@ -30,7 +29,6 @@
             </cstr>
         </div>
     </main>
-    {bottomScripts}
     <script>
         document.querySelectorAll('pre').forEach(el => {
             el.innerHTML = `<code class="language-javascript">${el.innerHTML}</code>`;

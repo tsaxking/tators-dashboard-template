@@ -22,6 +22,16 @@ export default class Role {
         return new Role(data as RoleObject);
     }
 
+    static async all(): Promise<Role[]> {
+        const getQuery = `
+            SELECT * 
+            FROM roles
+        `;
+
+        const data = await MAIN.all(getQuery);
+        return data.map(d => new Role(d as RoleObject)).sort((a, b) => a.rank - b.rank);
+    }
+
     name: string;
     permissions: string[];
     description: string;
@@ -29,7 +39,7 @@ export default class Role {
 
     constructor(role: RoleObject) {
         this.name = role.name;
-        this.permissions = JSON.parse(role.permissions);
+        this.permissions = JSON.parse(role.permissions) as string[];
         this.description = role.description;
         this.rank = role.rank;
     }

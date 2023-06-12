@@ -22,6 +22,10 @@ type EmailOptions = {
         path: string
     }[],
     constructor: {
+        link?: string,
+        linkText?: string,
+        title: string,
+        message: string,
         [key: string]: any
     }
 }

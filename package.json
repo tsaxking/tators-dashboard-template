@@ -7,8 +7,7 @@
     "test": "tsc ./main.ts && node main.js test",
     "dev": "tsc ./main.ts && node main.js dev",
     "start": "tsc ./main.ts && node main.js prod",
-    "test-env": "node ./test-env/test.js",
-    "debug": "node ./test-env/debugger.js"
+    "debug": "tsc ./test-env/debug.ts --esModuleInterop && node ./test-env/debug.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +22,8 @@
   "homepage": "https://github.com/tsaxking/template#readme",
   "dependencies": {
     "@gerhobbelt/gitignore-parser": "github:gerhobbelt/gitignore-parser",
+    "@google-cloud/local-auth": "^2.1.1",
+    "@total-typescript/ts-reset": "^0.4.2",
     "@types/request-ip": "^0.0.38",
     "@types/uuid": "^9.0.1",
     "autoprefixer": "^10.4.14",
@@ -34,7 +35,8 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "gitignore-parser": "^0.0.2",
-    "node-html-constructor": "^2.1.2",
+    "googleapis": "^118.0.0",
+    "node-html-constructor": "^4.0.0",
     "node-html-parser": "^6.1.5",
     "nodemailer": "^6.9.1",
     "nodemailer-sendgrid-transport": "^0.2.0",

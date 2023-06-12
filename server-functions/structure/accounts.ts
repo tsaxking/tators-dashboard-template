@@ -3,8 +3,14 @@ import crypto from "crypto";
 import { uuid } from "./uuid";
 import Role from "./roles";
 import { NextFunction, Request, Response } from "express";
-import { ExtendedRequest } from "../../server";
 import { Status } from "./status";
+import { validate } from 'deep-email-validator';
+import { Email, EmailType } from "./email";
+import { config } from 'dotenv';
+
+
+config();
+
 
 type AccountObject = {
     username: string;
@@ -32,38 +38,48 @@ type PermissionsObject = {
 
 export enum AccountStatus {
     success = 'success',
-    invalidUsername = 'Invalid username',
-    invalidPassword = 'Invalid password',
-    invalidEmail = 'Invalid email',
-    invalidName = 'Invalid name',
-    usernameTaken = 'Username taken',
-    emailTaken = 'Email taken',
+    invalidUsername = 'invalidUsername',
+    invalidPassword = 'invalidPassword',
+    invalidEmail = 'invalidEmail',
+    invalidName = 'invalidName',
+    usernameTaken = 'usernameTaken',
+    emailTaken = 'emailTaken',
+    notFound = 'notFound',
+    created = 'created',
 
     // verification
-    alreadyVerified = 'Already verified',
-    notVerified = 'Not verified', 
+    alreadyVerified = 'alreadyVerified',
+    notVerified = 'notVerified', 
 
     // login
-    incorrectPassword = 'Incorrect password',
-    incorrectUsername = 'Incorrect username',
-    incorrectEmail = 'Incorrect email',
+    incorrectPassword = 'incorrectPassword',
+    incorrectUsername = 'incorrectUsername',
+    incorrectEmail = 'incorrectEmail',
 
 
 
     // roles
-    hasRole = 'Has role',
-    noRole = 'No role',
+    hasRole = 'hasRole',
+    noRole = 'noRole',
 
 
 
 
     // password change
-    passwordChangeSuccess = 'Password change success',  
-    passwordChangeInvalid = 'Password change invalid',
-    passwordChangeExpired = 'Password change expired',
-    passwordChangeUsed = 'Password change used'
+    passwordChangeSuccess = 'passwordChangeSuccess',  
+    passwordChangeInvalid = 'passwordChangeInvalid',
+    passwordChangeExpired = 'passwordChangeExpired',
+    passwordChangeUsed = 'passwordChangeUsed'
 }
 
+
+type AccountInfo = {};
+type DiscordLink = {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string;
+};
 
 
 export default class Account {
@@ -146,8 +162,18 @@ export default class Account {
         return data.map((a: AccountObject) => new Account(a));
     }
 
+    static async unverifiedAccounts(): Promise<Account[]> {
+        const query = `
+            SELECT * FROM Accounts
+            WHERE verified = 0
+        `;
+
+        const data = await MAIN.all(query);
+        return data.map((a: AccountObject) => new Account(a));
+    }
+
     static allowPermissions(...permission: string[]): NextFunction {
-        const fn = (req: ExtendedRequest, res: Response, next: NextFunction) => {
+        const fn = (req: Request, res: Response, next: NextFunction) => {
             const { session } = req;
             const { account } = session;
 
@@ -175,7 +201,7 @@ export default class Account {
     }
 
     static allowRoles(...role: string[]): NextFunction {
-        const fn = (req: ExtendedRequest, res: Response, next: NextFunction) => {
+        const fn = (req: Request, res: Response, next: NextFunction) => {
             const { session } = req;
             const { account } = session;
 
@@ -195,6 +221,15 @@ export default class Account {
         }
 
         return fn as NextFunction;
+    }
+
+    static async all(): Promise<Account[]> {
+        const query = `
+            SELECT * FROM Accounts
+        `;
+
+        const data = await MAIN.all(query);
+        return data.map((a: AccountObject) => new Account(a));
     }
 
 
@@ -233,8 +268,8 @@ export default class Account {
     }
 
     static async create(username: string, password: string, email: string, name: string): Promise<AccountStatus> {
-        const exists = await Account.fromUsername(username);
-        if (exists) return AccountStatus.usernameTaken;
+        if (await Account.fromUsername(username)) return AccountStatus.usernameTaken;
+        if (await Account.fromEmail(email)) return AccountStatus.emailTaken;
 
         const { valid } = Account;
 
@@ -242,6 +277,12 @@ export default class Account {
         if (!valid(password)) return AccountStatus.invalidPassword;
         if (!valid(email)) return AccountStatus.invalidEmail;
         if (!valid(name)) return AccountStatus.invalidName;
+
+        const emailValid = await validate({ email })
+            .then((results) => !!results.valid)
+            .catch(() => false);
+
+        if (!emailValid) return AccountStatus.invalidEmail;
 
         const { salt, key } = Account.newHash(password);
 
@@ -271,19 +312,19 @@ export default class Account {
             0
         ]);
 
-        return AccountStatus.success;
+        return AccountStatus.created;
     }
 
     static async verify(username: string): Promise<AccountStatus> {
         const account = await Account.fromUsername(username);
-        if (!account) return AccountStatus.invalidUsername;
+        if (!account) return AccountStatus.notFound;
 
         return account.verify();
     }
 
     static async unVerify(username: string): Promise<AccountStatus> {
         const account = await Account.fromUsername(username);
-        if (!account) return AccountStatus.invalidUsername;
+        if (!account) return AccountStatus.notFound;
         return account.unVerify();
     }
 
@@ -291,7 +332,7 @@ export default class Account {
 
     static async delete(username: string): Promise<AccountStatus> {
         const account = await Account.fromUsername(username);
-        if (!account) return AccountStatus.invalidUsername;
+        if (!account) return AccountStatus.notFound;
 
         const query = `
             DELETE FROM Accounts
@@ -338,33 +379,27 @@ export default class Account {
     username: string;
     key: string;
     salt: string;
-    info: {
-        [key: string]: any
-    }
+    info: AccountInfo;
     roles: string[];
     name: string;
     email: string;
     verified: boolean;
     passwordChange: string|null;
     tatorBucks: number;
-    discordLink: {
-        id: string;
-        username: string;
-        avatar: string;
-    };
+    discordLink: DiscordLink;
 
     constructor(obj: AccountObject) {
         this.username = obj.username;
         this.key = obj.key;
         this.salt = obj.salt;
-        this.info = JSON.parse(obj.info);
-        this.roles = JSON.parse(obj.roles);
+        this.info = JSON.parse(obj.info) as AccountInfo;
+        this.roles = JSON.parse(obj.roles) as string[];
         this.name = obj.name;
         this.email = obj.email;
         this.verified = !!obj.verified;
         this.passwordChange = obj.passwordChange;
         this.tatorBucks = obj.tatorBucks;
-        this.discordLink = JSON.parse(obj.discordLink);
+        this.discordLink = JSON.parse(obj.discordLink) as DiscordLink;
     }
 
     get safe() {
@@ -415,6 +450,15 @@ export default class Account {
         `;
 
         await MAIN.run(query, [1, this.username]);
+
+        const e = new Email(this.email, 'Account Verified', EmailType.link, {
+            constructor: {
+                title: 'Account Verified',
+                message: 'Please click the link below to go to the login page',
+                link: `${process.env.DOMAIN}/account/sign-in`,
+                linkText: 'Sign In'
+            }
+        });
 
         this.verified = true;
         return AccountStatus.success;

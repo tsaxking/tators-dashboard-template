@@ -10,7 +10,9 @@ import builder from './server-functions/page-builder';
 import { emailValidation } from './server-functions/middleware/spam-detection';
 import { Worker, isMainThread, workerData, parentPort } from 'worker_threads';
 import { config } from 'dotenv';
-
+import './server-functions/declaration-merging/express.d.ts';
+import { Status } from './server-functions/structure/status';
+import Account from './server-functions/structure/accounts';
 
 config();
 
@@ -69,33 +71,50 @@ app.use(express.json({ limit: '50mb' }));
 app.use('/static', express.static(path.resolve(__dirname, './static')));
 app.use('/uploads', express.static(path.resolve(__dirname, './uploads')));
 
-export type ExtendedRequest = Request & {
-    io: Server, 
-    start: number, 
-    ip?: string|null, 
-    session: Session 
-};
 
 app.use((req, res, next) => {
-    (req as unknown as ExtendedRequest).io = io;
-    (req as unknown as ExtendedRequest).start = Date.now();
-    (req as unknown as ExtendedRequest).ip = getClientIp(req);
+    req.io = io;
+    req.start = Date.now();
+    req.ip = getClientIp(req) || '';
+
     next();
 });
 
 function stripHtml(body: any) {
-    let files;
+    let files: any;
 
     if (body.files) {
         files = JSON.parse(JSON.stringify(body.files));
         delete body.files;
     }
 
-    let str = JSON.stringify(body);
-    str = str.replace(/<[^<>]+>/g, '');
+    let obj: any = {};
 
-    const obj = JSON.parse(str);
-    obj.files = files;
+    const remove = (str: string) => str.replace(/(<([^>]+)>)/gi, '');
+
+    const strip = (obj: any) => {
+        switch (typeof obj) {
+            case 'string':
+                return remove(obj);
+            case 'object':
+                if (Array.isArray(obj)) {
+                    return obj.map(strip);
+                }
+                for (const key in obj) {
+                    obj[key] = strip(obj[key]);
+                }
+                return obj;
+            default:
+                return obj;
+        }
+    }
+
+
+    obj = strip(body);
+
+    if (files) {
+        obj.files = files;
+    }
 
     return obj;
 }
@@ -174,15 +193,95 @@ app.post('/*', emailValidation(['email', 'confirmEmail'], {
 // app.use(builder);
 
 
+import accounts from './server-functions/routes/account';
+app.use('/account', accounts);
 
 
-
-
-
+app.use(async (req, res, next) => {
+    const username = process.env.AUTO_SIGN_IN as string;
+    // if auto sign in is enabled, sign in as the user specified in the .env file
+    if (env !== 'prod' && username && req.session.account?.username !== username) {
+        const account = await Account.fromUsername(username as string);
+        if (account) {
+            req.session.signIn(account);
+        }
+    }
+    next();
+});
 
 
 app.use((req, res, next) => {
-    if ((req as unknown as ExtendedRequest).session.account?.roles.includes('guest')) {}
+    if (!req.session.account) {
+        return Status.from('account.notLoggedIn', req).send(res);
+    }
+    next();
+});
+
+
+
+
+// █▀▄ ▄▀▄ █ █ ▀█▀ █ █▄ █ ▄▀  
+// █▀▄ ▀▄▀ ▀▄█  █  █ █ ▀█ ▀▄█ 
+
+
+import admin from './server-functions/routes/admin';
+import { getJSON } from 'jquery';
+import { getTemplateSync } from './server-functions/files';
+app.use('/admin', admin);
+
+
+
+
+
+
+
+
+
+
+type Link = {
+    name: string;
+    html: string;
+    icon: string;
+    pathname: string;
+    scripts: string[];
+    styles: string[];
+    keywords: string[];
+    description: string;
+    screenInfo: {
+        size: string;
+        color: string
+    };
+    prefix: string;
+    display: boolean;
+    permission?: string;
+};
+
+type Page = {
+    title: string;
+    links: Link[];
+    display: boolean;
+};
+
+
+app.get('/get-links', async (req, res) => {
+    const pages = await getJSON('pages') as Page[];
+
+    // at this point, account should exist because of the middleware above
+    const permissions = await req.session.account?.getPermissions();
+
+    let links: any[] = [];
+    pages.forEach(page => {
+        links = [
+            ...links,
+            ...page.links.filter(l => {
+                if (l.permission) {
+                    // console.log(l.permission, permissions[l.permission]);
+                    return permissions ? permissions[l.permission] : false; 
+                } else return l.display;
+            })
+        ];
+    });
+    res.json(links.filter(l => l.display));
 });
 
 
@@ -193,27 +292,50 @@ app.use((req, res, next) => {
 
 
 
+app.get('/*', async (req, res, next) => {
+    const permissions = await req.session.account?.getPermissions();
+
+    if (permissions?.permissions.includes('logs')) {
+        req.session.socket?.join('logs');
+    }
 
 
+    const pages = await getJSON('pages') as Page[];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    const cstr = {
+        pagesRepeat: pages.map(page => {
+            return page.links.map(l => {
+                return {
+                    title: l.name,
+                    content: getTemplateSync(l.html),
+                    lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
+                    prefix: l.prefix 
+                }
+            })
+        }).flat(Infinity),
+        navSections: pages.map(page => {
+            return [
+                {
+                    title: page.title,
+                    type: 'navTitle'
+                },
+                ...page.links.map(l => {
+                    return {
+                        name: l.name,
+                        type: 'navLink',
+                        pathname: l.pathname,
+                        icon: l.icon,
+                        lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
+                        prefix: l.prefix
+                    }
+                })
+            ];
+        }).flat(Infinity),
+        year: new Date().getFullYear(),
+        description: 'Team Tators Dashboard',
+        keywords: 'Tators, Dashboard, 2122, FRC, FIRST'
+    };
+});
 
 
 
@@ -271,8 +393,8 @@ setInterval(() => {
 app.use((req, res, next) => {
     const csvObj: Log = {
         date: Date.now(),
-        duration: Date.now() - (req as unknown as ExtendedRequest).start,
-        ip: (req as unknown as ExtendedRequest).session.ip,
+        duration: Date.now() - req.start,
+        ip: req.session.ip,
         method: req.method,
         url: req.originalUrl,
         status: res.statusCode,

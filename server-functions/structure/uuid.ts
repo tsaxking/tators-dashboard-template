@@ -1,8 +1,12 @@
 import Random from 'random-org';
 import { MAIN } from '../databases';
-import * as dotenv from 'dotenv';
+import { config } from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
-dotenv.config();
+
+
+
+
+config();
 
 const getIds = async (n: number) => {
     const tableQuery = `

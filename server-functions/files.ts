@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';
 import { HTMLElement, parse } from 'node-html-parser';
-import { render } from 'node-html-constructor/versions/v3';
+import render from 'node-html-constructor/versions/v4';
 import callsite from 'callsite';
 import { workerData } from 'worker_threads';
 import ObjectsToCsv from 'objects-to-csv';
@@ -796,6 +796,8 @@ export enum LogType {
 export type LogObj = {
     [key: string]: string|number|boolean|undefined|null;
 }
+
+if (!fs.existsSync(path.resolve(__dirname, '../logs'))) fs.mkdirSync(path.resolve(__dirname, '../logs'));
 
 export async function log(type: LogType, dataObj: LogObj) {
     return new ObjectsToCsv([dataObj]).toDisk(

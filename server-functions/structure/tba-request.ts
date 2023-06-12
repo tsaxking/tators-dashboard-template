@@ -89,7 +89,7 @@ export async function requestFromTBA(pathname: string, newData: boolean = false,
 
 
 
-export class TBA {
+export default class TBA {
     static async getEvent(eventKey: string) {
         const e = await requestFromTBA(`/event/${eventKey}`);
 

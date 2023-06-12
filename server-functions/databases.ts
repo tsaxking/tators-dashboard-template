@@ -2,6 +2,7 @@ import * as sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import * as path from 'path';
 import * as fs from 'fs';
+import { getJSON } from './files';
 
 type Resolve<T> = (value?: T | PromiseLike<T>) => void;
 type Reject = (reason?: any) => void;
@@ -140,6 +141,37 @@ export class DB {
         return new Promise((resolve, reject) => {
             this.runQueue(new Query(QueryType.each, query, resolve, reject, params));
         });
+    }
+
+
+    async info(): Promise<any> {
+        const tableData = await getJSON('/tables');
+        const query = `
+            SELECT name
+            FROM sqlite_schema
+            WHERE 
+                type ='table' AND 
+                name NOT LIKE 'sqlite_%';
+        `;
+
+        const tables = await MAIN.all(query);
+
+        return Promise.all(tables.map(async({ name }) => {
+            const data = await MAIN.all(`PRAGMA table_info(${name})`);
+            return {
+                table: name,
+                data: tableData[name],
+                columns: data.map(d => {
+                    return {
+                        name: d.name,
+                        type: d.type,
+                        jsType: tableData[name]?.columns[d.name]?.type,
+                        description: tableData[name]?.columns[d.name]?.description,
+                        notnull: d.notnull
+                    }
+                })
+            }
+        }));
     }
 }
 

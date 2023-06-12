@@ -6,25 +6,17 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="style.css">
     <!-- description -->
-    <meta name="description" content="{description}">
+    <meta name="description" content="{{ description }}">
     <!-- keywords -->
-    <meta name="keywords" content="{keywords}">
+    <meta name="keywords" content="{{ keywords }}">
     <!-- Icon -->
     <link rel="icon" href="../static/pictures/tators-logo.jpg">
-    <!-- csp -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' {cspScripts}; style-src 'self' {cspStyles}; font-src 'self' {cspFonts}; frame-src https://h5p.org https://youtube.com">
-    <cstr cstr-type="repeat" id="styles">
-        <link rel="stylesheet" href="{path}">
-    </cstr>
 </head>
 
 <body>
-    <script src="/socket.io/socket.io.js"></script>
-    <cstr cstr-type="repeat" id="topScripts">
-        <script src="{path}"></script>
-    </cstr>
+    <script src="script.js"></script>
     <div id="contextmenu-container" class="d-none position-fixed bg-dark rounded shadow">
         <!-- <div class="dropdown"> -->
         <div id="contextmenu" class="bg-dark rounded"></div>
@@ -172,22 +164,22 @@
         <div class="offcanvas-body p-0">
             <nav class="navbar-dark">
                 <ul class="navbar-nav">
-                    <cstr cstr-type="repeat" id="navSections">
-                        <script cstr-type="repeat-eval">
-                            if (cstr.type == 'navTitle') `
+                    <repeat  id="navSections">
+                        <script cstr>
+                            if (type == 'navTitle') `
                             <li>
-                                <h5 class="text-muted px-3 text-capitalize no-select">${cstr.title}</h5>
+                                <h5 class="text-muted px-3 text-capitalize no-select">${title}</h5>
                             </li>`; else `
                             <li>
-                                <a href="${cstr.pathname}" class="nav-link px-5 toggle-elements no-select" data-toggle-class=".page" data-target="#${cstr.lowercaseTitle}" data-page="/${cstr.lowercaseTitle}">
+                                <a href="${pathname}" class="nav-link px-5 toggle-elements no-select" data-toggle-class=".page" data-target="#${lowercaseTitle}" data-page="/${lowercaseTitle}">
                                     <span class="me-2">
-                                        ${cstr.icon}
-                                        <span>${cstr.name}</span>
+                                        ${icon}
+                                        <span>${name}</span>
                                     </span>
                                 </a>
                             </li>`;
                         </script>
-                    </cstr>
+                    </repeat>
                 </ul>
             </nav>
         </div>
@@ -232,30 +224,27 @@
     </div>
     <!-- Main part of the site -->
     <main>
-        <cstr cstr-type="repeat" id="pagesRepeat">
-            <div class="container-fluid page pt-5 bg-light" id="{lowercaseTitle}">
+        <repeat id="pagesRepeat">
+            <div class="container-fluid page pt-5 bg-light" id="{{ lowercaseTitle }}">
                 <div class="row mb-3">
-                    <h1 class="text-capitalize no-select">{title}</h1>
+                    <h1 class="text-capitalize no-select">{{ title }}</h1>
                 </div>
-                <div class="mb-1 page-body" id="{prefix}--dashboard-body">
-                    {content}
+                <div class="mb-1 page-body" id="{{ prefix }}--dashboard-body">
+                    {{ content }}
                 </div>
 
                 <!-- Start of footer -->
                 <footer class="pb-5">
                     <br>
                     <hr class="dropdown-divider">
-                    <i>&copy; {year} FIRST Robotics Competition Team 2122 | Team Tators </i>
+                    <i>&copy; {{ year }} FIRST Robotics Competition Team 2122 | Team Tators </i>
                 </footer>
             </div>
-        </cstr>
+        </repeat>
     </main>
     <!-- End of main -->
 
     <iframe id="download" class="d-none"></iframe>
-    <cstr cstr-type="repeat" id="bottomScripts">
-        <script src="{path}"></script>
-    </cstr>
 </body>
 
 </html>

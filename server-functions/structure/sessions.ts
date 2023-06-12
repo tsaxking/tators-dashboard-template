@@ -54,7 +54,7 @@ export class Session {
         if (!fs.existsSync(path.resolve(__dirname, './sessions.txt'))) return fs.writeFileSync(path.resolve(__dirname, './sessions.txt'), '{}', 'utf8');
 
         const s = fs.readFileSync(path.resolve(__dirname, './sessions.txt'), 'utf8');
-        const sessions = JSON.parse(s);
+        const sessions = JSON.parse(s) as {[key: string]: any};
 
         return Promise.all(Object.entries(sessions).map(async ([id, session]) => {
             Session.addSession(await Session.fromSessObj(session));
