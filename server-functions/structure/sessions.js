@@ -22,10 +22,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Session = void 0;
 const request_ip_1 = require("request-ip");
 const uuid_1 = require("uuid");
+const accounts_1 = __importDefault(require("./accounts"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const cookie_1 = require("./cookie");
@@ -55,7 +59,7 @@ class Session {
                 ip: session.ip,
                 id: session.id,
                 latestActivity: session.latestActivity,
-                account: session.account
+                account: session.account?.username
             };
         });
         fs.writeFile(path.resolve(__dirname, './sessions.txt'), JSON.stringify(s, null, 4), err => {
@@ -70,16 +74,16 @@ class Session {
             return fs.writeFileSync(path.resolve(__dirname, './sessions.txt'), '{}', 'utf8');
         const s = fs.readFileSync(path.resolve(__dirname, './sessions.txt'), 'utf8');
         const sessions = JSON.parse(s);
-        Object.entries(sessions).forEach(([id, session]) => {
-            Session.addSession(Session.fromSessObj(session));
-        });
+        return Promise.all(Object.entries(sessions).map(async ([id, session]) => {
+            Session.addSession(await Session.fromSessObj(session));
+        }));
     }
-    static fromSessObj(s) {
+    static async fromSessObj(s) {
         const session = new Session();
         session.ip = s.ip;
         session.id = s.id;
         session.latestActivity = s.latestActivity;
-        session.account = s.account;
+        session.account = await accounts_1.default.fromUsername(s.account);
         return session;
     }
     static addSocket(socket) {
@@ -98,7 +102,7 @@ class Session {
     ip;
     id;
     latestActivity = Date.now();
-    account;
+    account = null;
     socket;
     constructor(req, res) {
         if (req)
@@ -119,7 +123,7 @@ class Session {
         this.account = account;
     }
     signOut() {
-        delete this.account;
+        this.account = null;
     }
     destroy() {
         Session.removeSession(this);

@@ -16,6 +16,17 @@ import Account from './server-functions/structure/accounts';
 
 config();
 
+declare global {
+    namespace Express {
+        interface Request {
+            session: Session;
+            start: number;
+            io: Server;
+        }
+    }
+}
+
+
 const { PORT, DOMAIN } = process.env;
 
 const [,, env, ...args] = workerData?.args || process.argv;
@@ -225,8 +236,7 @@ app.use((req, res, next) => {
 
 
 import admin from './server-functions/routes/admin';
-import { getJSON } from 'jquery';
-import { getTemplateSync } from './server-functions/files';
+import { getTemplateSync, getJSON } from './server-functions/files';
 app.use('/admin', admin);
 
 

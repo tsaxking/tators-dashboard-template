@@ -33,6 +33,7 @@ const postcss_1 = __importDefault(require("postcss"));
 const cssnano_1 = __importDefault(require("cssnano"));
 const autoprefixer_1 = __importDefault(require("autoprefixer"));
 const axios_1 = __importDefault(require("axios"));
+const child_process_1 = __importDefault(require("child_process"));
 const sass_1 = __importDefault(require("sass"));
 // import { compile } from '@gerhobbelt/gitignore-parser';
 const worker_threads_1 = require("worker_threads");
@@ -61,8 +62,9 @@ var Colors;
     Colors["BgMagenta"] = "\u001B[45m";
     Colors["BgCyan"] = "\u001B[46m";
 })(Colors || (Colors = {}));
-const watchIgnoreList = [
-    path.resolve(__dirname, './ignore-list.txt')
+worker_threads_1.workerData.watchIgnoreList = [
+    '../package.json',
+    '../package-lock.json'
 ];
 const watchIgnoreDirs = [
     path.resolve(__dirname, './dependencies'),
@@ -70,7 +72,15 @@ const watchIgnoreDirs = [
     path.resolve(__dirname, '../static/build'),
     path.resolve(__dirname, '../archive'),
     path.resolve(__dirname, '../history'),
-    path.resolve(__dirname, '../db')
+    path.resolve(__dirname, '../db'),
+    path.resolve(__dirname, '../test-env'),
+    path.resolve(__dirname, '../.git'),
+    path.resolve(__dirname, '../.vscode'),
+    path.resolve(__dirname, '../.idea'),
+    path.resolve(__dirname, '../.gitignore'),
+    path.resolve(__dirname, '../.gitattributes'),
+    path.resolve(__dirname, './updates'),
+    path.resolve(__dirname, '../logs')
 ];
 const dirs = [
     '../static',
@@ -91,22 +101,23 @@ const readJSON = (path) => {
     return JSON.parse(content);
 };
 const build = readJSON(path.resolve(__dirname, './build.json'));
+const frontTs = fs.readFileSync(path.resolve(__dirname, './front-ts.json'), 'utf8');
 const { streams, ignore, minify } = build;
-const fromUrl = async (url, stream) => {
+const fromUrl = async (url) => {
     return new Promise(async (res, rej) => {
+        const safeUrl = url.replace(new RegExp('/', 'g'), '');
         let data;
-        if (fs.existsSync(path.resolve(__dirname, `./dependencies/${url}`))) {
-            data = fs.readFileSync(path.resolve(__dirname, `./dependencies/${url}`), 'utf8');
+        if (fs.existsSync(path.resolve(__dirname, `./dependencies/${safeUrl}`))) {
+            data = fs.readFileSync(path.resolve(__dirname, `./dependencies/${safeUrl}`), 'utf8');
         }
         else {
             data = (await axios_1.default.get(url)).data;
+            fs.writeFileSync(path.resolve(__dirname, `./dependencies/${safeUrl}`), data);
         }
-        stream.write(data);
-        watchIgnoreList.push(path.resolve(__dirname, `./dependencies/${url}`));
-        res(null);
+        res({ data, safeUrl });
     });
 };
-const fromTs = async (filePath, stream, ext) => {
+const fromTs = async (filePath, stream, ext, streamName) => {
     return new Promise(async (res, rej) => {
         const tsConfig = readJSON(path.resolve(__dirname, filePath, './tsconfig.json'));
         const program = typescript_1.default.createProgram([filePath], {
@@ -130,10 +141,10 @@ const fromTs = async (filePath, stream, ext) => {
             console.error(new Error('There was an error compiling the project'));
         }
         if (tsConfig?.compilerOptions?.outFile) {
-            return res(fromFile(tsConfig.compilerOptions.outFile, stream, ext));
+            return res(fromFile(tsConfig.compilerOptions.outFile, stream, ext, streamName));
         }
         if (tsConfig?.compilerOptions?.outDir) {
-            return res(fromDir(tsConfig.compilerOptions.outDir, '.js', stream, []));
+            return res(fromDir(tsConfig.compilerOptions.outDir, '.js', stream, [], streamName));
         }
         const readDir = (dirPath) => {
             const files = fs.readdirSync(dirPath);
@@ -143,7 +154,7 @@ const fromTs = async (filePath, stream, ext) => {
                     continue;
                 }
                 if (file.endsWith('.ts'))
-                    watchIgnoreList.push(path.resolve(dirPath, file.replace('.ts', '.js')));
+                    worker_threads_1.workerData.watchIgnoreList.push(path.resolve(dirPath, file.replace('.ts', '.js')));
             }
         };
         if (fs.lstatSync(filePath).isDirectory()) {
@@ -160,38 +171,89 @@ const fromSass = async (filePath, stream) => {
         res(null);
     });
 };
-const fromFile = (filePath, stream, ext) => {
+const fromFile = (filePath, stream, ext, streamName) => {
     return new Promise((res, rej) => {
-        // console.log(path.extname(filePath), ext);
-        if (path.extname(filePath) !== ext)
-            return res(null);
-        // console.log(filePath);
-        const content = fs.readFileSync(filePath, 'utf8');
-        stream.write(content);
+        try {
+            // console.log(path.extname(filePath), ext);
+            if (path.extname(filePath) !== ext) {
+                return res(null);
+            }
+            // console.log(filePath);
+            const content = fs.readFileSync(filePath, 'utf8');
+            stream.write(content);
+            worker_threads_1.workerData.builds[streamName].push(filePath);
+        }
+        catch (err) {
+            console.error('Error adding file:', filePath);
+            res(null);
+        }
     });
 };
-const fromDir = async (dirPath, ext, stream, ignoreList) => {
+const fromDir = async (dirPath, ext, stream, ignoreList, streamName) => {
     ignoreList = ignoreList.map((file) => path.resolve(__dirname, file));
-    const readDir = (dirPath) => {
+    const readDir = async (dirPath) => {
+        if (dirPath.includes('[ts]')) {
+            await fromTs(dirPath, stream, ext, streamName);
+            return;
+        }
         const files = fs.readdirSync(dirPath);
         for (const file of files) {
             if (fs.lstatSync(path.resolve(dirPath, file)).isDirectory()) {
                 if (dirPath.includes('.git'))
                     continue;
-                readDir(path.resolve(dirPath, file));
+                await readDir(path.resolve(dirPath, file));
                 continue;
             }
             if (ext && !file.endsWith(ext))
                 continue;
             if (ignoreList.includes(file))
                 continue;
-            fromFile(path.resolve(dirPath, file), stream, ext);
+            await fromFile(path.resolve(dirPath, file), stream, ext, streamName);
         }
     };
-    readDir(path.resolve(__dirname, dirPath));
+    if (fs.lstatSync(dirPath).isDirectory())
+        readDir(dirPath);
+    else
+        console.error('Error reading directory:', dirPath);
 };
-let watchStarted = false;
+const copyFile = async (filePath, streamName, index) => {
+    return new Promise(async (res, rej) => {
+        if (filePath.includes('http')) {
+            console.log('Requesting: ', filePath);
+            const { data, safeUrl } = await fromUrl(filePath);
+            fs.writeFileSync(path.resolve(__dirname, '..', 'static', 'build', 'dir-' + streamName.replace('.', '-'), index + safeUrl), data);
+            return res();
+        }
+        ;
+        if (!fs.existsSync(path.resolve(__dirname, filePath.replace('[ts]', '')))) {
+            console.error('File does not exist:', filePath);
+            return res();
+        }
+        fs.cpSync(path.resolve(__dirname, filePath.replace('[ts]', '')), path.resolve(__dirname, '..', 'static', 'build', 'dir-' + streamName.replace('.', '-'), index + filePath
+            .replace(new RegExp('/', 'g'), '')), { recursive: true });
+        res();
+    });
+};
+const serverFunctions = () => {
+    return new Promise((res, rej) => {
+        const child = child_process_1.default.spawn('tsc', [], {
+            stdio: 'pipe',
+            shell: true,
+            cwd: path.resolve(__dirname, '../server-functions'),
+            env: process.env
+        });
+        child.on('error', console.error);
+        child.stdout.on('data', console.log);
+        child.stderr.on('data', console.error);
+        child.on('close', () => {
+            res();
+        });
+    });
+};
 const runBuild = async () => {
+    worker_threads_1.parentPort?.postMessage('build-start');
+    worker_threads_1.workerData.builds = {};
+    await serverFunctions();
     let { length } = Object.keys(build.streams);
     let count = 0;
     const countUp = () => {
@@ -207,56 +269,38 @@ const runBuild = async () => {
     for (let [streamName, data] of Object.entries(streams)) {
         console.log('\x1b[32m', 'Stream:', '\x1b[0m', streamName);
         const min = streamName.replace(path.extname(streamName), '.min' + path.extname(streamName));
-        watchIgnoreList.push(path.resolve(__dirname, `../static/build/${streamName}`));
-        watchIgnoreList.push(path.resolve(__dirname, `../static/build/${min}`));
-        // if (fs.existsSync(path.resolve(__dirname, `../static/build/${streamName}`))) {
+        worker_threads_1.workerData.watchIgnoreList.push(path.resolve(__dirname, `../static/build/${streamName}`));
+        worker_threads_1.workerData.watchIgnoreList.push(path.resolve(__dirname, `../static/build/${min}`));
         fs.writeFileSync(path.resolve(__dirname, `../static/build/${streamName}`), '');
         fs.writeFileSync(path.resolve(__dirname, `../static/build/${min}`), '');
-        // }
         const { ignore: streamIgnore, files, priority } = data;
+        if (fs.existsSync(path.resolve(__dirname, `../static/build/dir-${streamName.replace('.', '-')}`))) {
+            // remove old build
+            fs.rmSync(path.resolve(__dirname, `../static/build/dir-${streamName.replace('.', '-')}`), { recursive: true });
+        }
+        fs.mkdirSync(path.resolve(__dirname, `../static/build/dir-${streamName.replace('.', '-')}`));
+        // if (files.some(f => f.includes('[ts]'))) {
+        //     console.log('Has ts');
+        //     fs.writeFileSync(path.resolve(__dirname, '..', 'static', 'build', 'dir-' + streamName.replace('.', '-'), 'tsconfig.json'), frontTs);
+        //     hasTs = true;
+        // }
         const stream = fs.createWriteStream(path.resolve(__dirname, `../static/build/${streamName}`));
         const streamIgnoreList = [...(ignore || []), ...(streamIgnore || [])];
-        // console.log(files);
-        const delimiters = {
-            '.js': ';',
-            '.css': ''
-        };
-        for (let file of files) {
-            console.log('file', file);
+        worker_threads_1.workerData.builds[streamName] = [];
+        for (let [index, file] of Object.entries(files)) {
             if (file.includes('--ignore-build'))
                 continue;
-            if (file.includes('http') && !file.includes('--force'))
-                continue;
-            file = file.replace('--force', '');
-            file = file.replace('[ts]', '');
-            try {
-                if (file.includes('http')) {
-                    await fromUrl(file, stream);
+            if (file.includes('http')) {
+                if (!file.includes('--force'))
                     continue;
-                }
-                if (file.startsWith('[ts]')) {
-                    await fromTs(file, stream, path.extname(streamName));
-                    continue;
-                }
-                if (path.extname(file) === '.scss' || path.extname(file) === '.sass') {
-                    await fromSass(file, stream);
-                    continue;
-                }
-                if (fs.lstatSync(path.resolve(__dirname, file)).isDirectory()) {
-                    await fromDir(file, path.extname(streamName), stream, streamIgnoreList);
-                    continue;
-                }
-                if (fs.existsSync(path.resolve(__dirname, file))) {
-                    await fromFile(file, stream, path.extname(streamName));
-                    continue;
-                }
-                stream.write(delimiters[path.extname(streamName)] + '\n');
+                file = file.replace('--force', '');
             }
-            catch (err) {
-                console.log(err);
-            }
+            file = file.trim();
+            await copyFile(file, streamName, +index);
         }
+        await fromDir(path.resolve(__dirname, '..', 'static', 'build', 'dir-' + streamName.replace('.', '-')), path.extname(streamName), stream, streamIgnoreList, streamName);
         stream.close(async (error) => {
+            // fs.rmSync(path.resolve(__dirname, `../static/build/'dir-${streamName}`), { recursive: true });
             if (error) {
                 return console.error(error);
             }
@@ -265,7 +309,7 @@ const runBuild = async () => {
                 const streamPath = path.resolve(__dirname, '../static/build', streamName);
                 let content = fs.readFileSync(streamPath, 'utf8');
                 const ext = path.extname(streamPath);
-                streamName = streamName.replace(ext, '.min' + ext);
+                const minStreamName = streamName.replace(ext, '.min' + ext);
                 console.log('Minifying', streamName + '...');
                 console.log(ext);
                 switch (ext) {
@@ -287,37 +331,61 @@ const runBuild = async () => {
                         }) || '';
                         break;
                 }
-                fs.writeFileSync(path.resolve(__dirname, '../static/build', streamName), content);
-                if (watchIgnoreList.length)
-                    fs.writeFileSync(path.resolve(__dirname, './ignore-list.txt'), watchIgnoreList.join('\n'));
+                if (!content)
+                    content = '';
+                fs.writeFileSync(path.resolve(__dirname, '../static/build', minStreamName), content);
+                // if (watchIgnoreList.length) fs.writeFileSync(path.resolve(__dirname, './ignore-list.txt'), watchIgnoreList.join('\n'));
+                // try {
+                //     fs.rmSync(path.resolve(__dirname, `../static/build/dir-${streamName.replace('.', '-')}`), { recursive: true });
+                // } catch {}
             }
             countUp();
         });
     }
-    // parentPort?.postMessage('build-complete');
-    if (!watchStarted) {
-        console.log(watchIgnoreList);
-        fs.watch('../', { recursive: true }, (eventType, filename) => {
-            if (watchIgnoreList.includes(path.resolve(__dirname, '../../', filename)))
-                return;
-            if (watchIgnoreDirs.some((dir) => path.resolve(__dirname, '../../', filename).includes(dir)))
-                return;
-            const extNames = [
-                '.js',
-                '.css',
-                '.ts',
-                '.html',
-                '.scss',
-                '.sass',
-                '.json'
-            ];
-            if (!extNames.includes(path.extname(filename)))
-                return;
-            console.log(Colors.FgMagenta, 'File changed:', Colors.Reset, filename);
-            worker_threads_1.parentPort?.postMessage('build-start');
-            runBuild();
-        });
-        watchStarted = true;
-    }
 };
-runBuild();
+let timeout = null;
+const buildTimeout = () => {
+    if (timeout)
+        clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        console.log('Building...');
+        runBuild();
+    }, 1000);
+};
+(async () => {
+    const readDir = (dirPath) => {
+        const files = fs.readdirSync(dirPath);
+        for (const file of files) {
+            if (fs.lstatSync(path.resolve(dirPath, file)).isDirectory()) {
+                readDir(path.resolve(dirPath, file));
+                continue;
+            }
+            if (file.endsWith('.ts')) {
+                worker_threads_1.workerData.watchIgnoreList.push(path.resolve(dirPath, file.replace('.ts', '.js')));
+            }
+        }
+    };
+    readDir(path.resolve(__dirname, '../server-functions'));
+    await runBuild();
+    fs.watch('../', { recursive: true }, (eventType, filename) => {
+        if (!filename)
+            return;
+        if (worker_threads_1.workerData.watchIgnoreList.includes(path.resolve(__dirname, '../../', filename)))
+            return;
+        if (watchIgnoreDirs.some((dir) => path.resolve(__dirname, '../../', filename).includes(dir)))
+            return;
+        const extNames = [
+            '.js',
+            '.css',
+            '.ts',
+            '.html',
+            '.scss',
+            '.sass',
+            '.json'
+        ];
+        if (!extNames.includes(path.extname(filename)))
+            return;
+        console.log(Colors.FgMagenta, eventType, Colors.Reset, '->', Colors.FgCyan, filename, Colors.Reset);
+        buildTimeout();
+    });
+})();

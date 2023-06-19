@@ -2,7 +2,16 @@ const __arguments = process.argv.slice(2);
 console.log('Arguments:', __arguments.map(a => '\x1b[35m' + a + '\x1b[0m').join(' '));
 const [env, ...args] = __arguments;
 
-const modes = {
+type Mode = {
+    type: string;
+    description: string;
+    command: string;
+    quickInfo: string[];
+}
+
+const modes: {
+    [key: string]: Mode;
+} = {
     dev: {
         type: 'development',
         description: 'In dev mode, only ts is rendered. This is the mode you should use when debugging',
@@ -72,8 +81,8 @@ let server: Worker;
 const newServer = async () => {
     if (server) server.terminate();
     
+    await runTs('./server-functions');
 
-    
     server = new Worker(path.resolve(__dirname, 'server.js'), {
         workerData: {
             mode: process.argv[2],
@@ -145,9 +154,13 @@ const update = async (): Promise<Worker> => {
 
 const runTs = async (fileName: string): Promise<void> => {
     const program = ts.createProgram([fileName], {
-        target: ts.ScriptTarget.ESNext,
+        target: ts.ScriptTarget.ES2022,
         module: ts.ModuleKind.CommonJS,
-        esModuleInterop: true
+        allowJs: true,
+        checkJs: false,
+        forceConsistentCasingInFileNames: true,
+        esModuleInterop: true,
+        skipLibCheck: true
     });
     const emitResult = program.emit();
 
@@ -199,12 +212,15 @@ const npmi = async (): Promise<void> => {
 (async() => {
     if (isMainThread) {
         await npmi();
-        await runTs('./server.ts');
-        await runTs('./build/build.ts');
+        await Promise.all([
+            runTs('./server-functions'),
+            runTs('./build/build.ts'),
+            runTs('./build/server-update.ts'),
+            runTs('./server.ts')
+        ]);
 
 
         await update();
         build();
     }
 })();
-

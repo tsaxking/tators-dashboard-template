@@ -94,17 +94,17 @@ var worker_threads_1 = require("worker_threads");
 var path = require("path");
 var child_process_1 = require("child_process");
 var ts = require("typescript");
+require("@total-typescript/ts-reset");
 var server;
 var newServer = function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                if (!server) return [3 /*break*/, 2];
-                return [4 /*yield*/, server.terminate()];
+                if (server)
+                    server.terminate();
+                return [4 /*yield*/, runTs('./server-functions')];
             case 1:
                 _a.sent();
-                _a.label = 2;
-            case 2:
                 server = new worker_threads_1.Worker(path.resolve(__dirname, 'server.js'), {
                     workerData: {
                         mode: process.argv[2],
@@ -120,7 +120,8 @@ var build = function () {
     var build = new worker_threads_1.Worker(path.resolve(__dirname, 'build', 'build.js'), {
         workerData: {
             mode: process.argv[2],
-            args: process.argv.slice(3)
+            args: process.argv.slice(3),
+            builds: {}
         }
     });
     build.on('message', function (msg) {
@@ -174,9 +175,13 @@ var runTs = function (fileName) { return __awaiter(void 0, void 0, void 0, funct
     var program, emitResult, allDiagnostics, exitCode;
     return __generator(this, function (_a) {
         program = ts.createProgram([fileName], {
-            target: ts.ScriptTarget.ESNext,
+            target: ts.ScriptTarget.ES2022,
             module: ts.ModuleKind.CommonJS,
-            esModuleInterop: true
+            allowJs: true,
+            checkJs: false,
+            forceConsistentCasingInFileNames: true,
+            esModuleInterop: true,
+            skipLibCheck: true
         });
         emitResult = program.emit();
         allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
@@ -227,22 +232,24 @@ var npmi = function () { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                if (!worker_threads_1.isMainThread) return [3 /*break*/, 5];
+                if (!worker_threads_1.isMainThread) return [3 /*break*/, 4];
                 return [4 /*yield*/, npmi()];
             case 1:
                 _a.sent();
-                return [4 /*yield*/, runTs('./server.ts')];
+                return [4 /*yield*/, Promise.all([
+                        runTs('./server-functions'),
+                        runTs('./build/build.ts'),
+                        runTs('./build/server-update.ts'),
+                        runTs('./server.ts')
+                    ])];
             case 2:
                 _a.sent();
-                return [4 /*yield*/, runTs('./build/build.ts')];
+                return [4 /*yield*/, update()];
             case 3:
                 _a.sent();
-                return [4 /*yield*/, update()];
-            case 4:
-                _a.sent();
                 build();
-                _a.label = 5;
-            case 5: return [2 /*return*/];
+                _a.label = 4;
+            case 4: return [2 /*return*/];
         }
     });
 }); })();

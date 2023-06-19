@@ -6,13 +6,6 @@ import ts from 'typescript';
 
 
 
-
-
-
-
-
-
-
 enum Color {
     red = '\x1b[31m',
     green = '\x1b[32m',

@@ -206,8 +206,7 @@ export default class Account {
             const { account } = session;
 
             if (!account) {
-                const s = Status.from('account.notLoggedIn', req);
-                return s.send(res);
+                return Status.from('account.notLoggedIn', req).send(res);
             }
 
             const { roles } = account;

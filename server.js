@@ -36,7 +36,11 @@ const request_ip_1 = require("request-ip");
 const sessions_1 = require("./server-functions/structure/sessions");
 const spam_detection_1 = require("./server-functions/middleware/spam-detection");
 const worker_threads_1 = require("worker_threads");
-require('dotenv').config();
+const dotenv_1 = require("dotenv");
+require("./server-functions/declaration-merging/express.d.ts");
+const status_1 = require("./server-functions/structure/status");
+const accounts_1 = __importDefault(require("./server-functions/structure/accounts"));
+(0, dotenv_1.config)();
 const { PORT, DOMAIN } = process.env;
 const [, , env, ...args] = worker_threads_1.workerData?.args || process.argv;
 const app = (0, express_1.default)();
@@ -50,9 +54,8 @@ io.on('connection', (socket) => {
     // your socket code here
     // ▄▀▀ ▄▀▄ ▄▀▀ █▄▀ ██▀ ▀█▀ ▄▀▀ 
     // ▄█▀ ▀▄▀ ▀▄▄ █ █ █▄▄  █  ▄█▀ 
-    socket.on('disconnect', () => {
-        console.log('user disconnected');
-    });
+    socket.on('ping', () => socket.emit('pong'));
+    socket.on('disconnect', () => console.log('user disconnected'));
 });
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.json({ limit: '50mb' }));
@@ -61,7 +64,7 @@ app.use('/uploads', express_1.default.static(path.resolve(__dirname, './uploads'
 app.use((req, res, next) => {
     req.io = io;
     req.start = Date.now();
-    req.ip = (0, request_ip_1.getClientIp)(req);
+    req.ip = (0, request_ip_1.getClientIp)(req) || '';
     next();
 });
 function stripHtml(body) {
@@ -70,10 +73,28 @@ function stripHtml(body) {
         files = JSON.parse(JSON.stringify(body.files));
         delete body.files;
     }
-    let str = JSON.stringify(body);
-    str = str.replace(/<[^<>]+>/g, '');
-    const obj = JSON.parse(str);
-    obj.files = files;
+    let obj = {};
+    const remove = (str) => str.replace(/(<([^>]+)>)/gi, '');
+    const strip = (obj) => {
+        switch (typeof obj) {
+            case 'string':
+                return remove(obj);
+            case 'object':
+                if (Array.isArray(obj)) {
+                    return obj.map(strip);
+                }
+                for (const key in obj) {
+                    obj[key] = strip(obj[key]);
+                }
+                return obj;
+            default:
+                return obj;
+        }
+    };
+    obj = strip(body);
+    if (files) {
+        obj.files = files;
+    }
     return obj;
 }
 // logs body of post request
@@ -122,6 +143,94 @@ app.post('/*', (0, spam_detection_1.emailValidation)(['email', 'confirmEmail'], 
         res.json({ error: 'error' });
     }
 }));
+// █▀▄ ██▀ ▄▀▄ █ █ ██▀ ▄▀▀ ▀█▀ ▄▀▀ 
+// █▀▄ █▄▄ ▀▄█ ▀▄█ █▄▄ ▄█▀  █  ▄█▀ 
+// this can be used to build pages on the fly and send them to the client
+// app.use(builder);
+const account_1 = __importDefault(require("./server-functions/routes/account"));
+app.use('/account', account_1.default);
+app.use(async (req, res, next) => {
+    const username = process.env.AUTO_SIGN_IN;
+    // if auto sign in is enabled, sign in as the user specified in the .env file
+    if (env !== 'prod' && username && req.session.account?.username !== username) {
+        const account = await accounts_1.default.fromUsername(username);
+        if (account) {
+            req.session.signIn(account);
+        }
+    }
+    next();
+});
+app.use((req, res, next) => {
+    if (!req.session.account) {
+        return status_1.Status.from('account.notLoggedIn', req).send(res);
+    }
+    next();
+});
+// █▀▄ ▄▀▄ █ █ ▀█▀ █ █▄ █ ▄▀  
+// █▀▄ ▀▄▀ ▀▄█  █  █ █ ▀█ ▀▄█ 
+const admin_1 = __importDefault(require("./server-functions/routes/admin"));
+const files_1 = require("./server-functions/files");
+app.use('/admin', admin_1.default);
+app.get('/get-links', async (req, res) => {
+    const pages = await (0, files_1.getJSON)('pages');
+    // at this point, account should exist because of the middleware above
+    const permissions = await req.session.account?.getPermissions();
+    let links = [];
+    pages.forEach(page => {
+        links = [
+            ...links,
+            ...page.links.filter(l => {
+                if (l.permission) {
+                    // console.log(l.permission, permissions[l.permission]);
+                    return permissions ? permissions[l.permission] : false;
+                }
+                else
+                    return l.display;
+            })
+        ];
+    });
+    res.json(links.filter(l => l.display));
+});
+app.get('/*', async (req, res, next) => {
+    const permissions = await req.session.account?.getPermissions();
+    if (permissions?.permissions.includes('logs')) {
+        req.session.socket?.join('logs');
+    }
+    const pages = await (0, files_1.getJSON)('pages');
+    const cstr = {
+        pagesRepeat: pages.map(page => {
+            return page.links.map(l => {
+                return {
+                    title: l.name,
+                    content: (0, files_1.getTemplateSync)(l.html),
+                    lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
+                    prefix: l.prefix
+                };
+            });
+        }).flat(Infinity),
+        navSections: pages.map(page => {
+            return [
+                {
+                    title: page.title,
+                    type: 'navTitle'
+                },
+                ...page.links.map(l => {
+                    return {
+                        name: l.name,
+                        type: 'navLink',
+                        pathname: l.pathname,
+                        icon: l.icon,
+                        lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
+                        prefix: l.prefix
+                    };
+                })
+            ];
+        }).flat(Infinity),
+        year: new Date().getFullYear(),
+        description: 'Team Tators Dashboard',
+        keywords: 'Tators, Dashboard, 2122, FRC, FIRST'
+    };
+});
 let logCache = [];
 // sends logs to client every 10 seconds
 setInterval(() => {
