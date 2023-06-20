@@ -69,56 +69,100 @@ console.log('Please run "npm run help" to see all the modes available.');
 
 
 import { Worker, isMainThread, workerData, parentPort } from 'worker_threads';
-// import { runBuild, watchIgnoreList } from './build/build';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import * as ts from 'typescript';
 import '@total-typescript/ts-reset';
+import * as os from 'os';
+import { config } from 'dotenv';
+import { buildServerFunctions, doBuild, onFileChange, stopWorkers, watchIgnoreDirs, watchIgnoreList, renderedBuilds } from './build/build';
+import * as chokidar from 'chokidar';
+
+config();
 
 
 let server: Worker;
 
 const newServer = async () => {
     if (server) server.terminate();
-    
-    await runTs('./server-functions');
+    await Promise.all([
+        runTs('./server.ts')
+    ]);
 
     server = new Worker(path.resolve(__dirname, 'server.js'), {
         workerData: {
             mode: process.argv[2],
-            args: process.argv.slice(3)
+            args: process.argv.slice(3),
+            builds: renderedBuilds
         }
+    });
+
+    server.on('error', (err) => {
+        console.log('Server error:', err);
+        console.log('Please make changes and save to restart the server.');
+        server.terminate();
     });
 }
 
-const build = () => {
-    console.log('Building project');
-    const build = new Worker(path.resolve(__dirname, 'build', 'build.js'), {
-        workerData: {
-            mode: process.argv[2],
-            args: process.argv.slice(3),
-            builds: {}
-        }
-    });
+const build = async() => {
+    if (server) server.terminate();
+    stopWorkers(); // kills all current build workers
+    const start = Date.now();
 
+    await Promise.all([
+        doBuild(),
+        buildServerFunctions()
+    ]);
+    console.log('Build complete in', Date.now() - start, 'ms');
 
-    build.on('message', (msg) => {
-        switch (msg) {
-            case 'build-complete':
-                console.log('Build complete');
-                newServer();
-                break;
-            case 'build-start':
-                console.log('Build started');
-                break;
-        }
-    });
-    build.on('error', console.error);
-    build.on('exit', (code) => {
-        if (code !== 0)
-            console.error(new Error(`Worker stopped with exit code ${code}`));
-    });
+    newServer();
+    startWatchProgram();
 };
+
+let buildTimeout: NodeJS.Timeout | undefined;
+let watchStarted = false;
+const startWatchProgram = () => {
+    if (watchStarted) return;
+    watchStarted = true;
+    const watcher = chokidar.watch(path.resolve(__dirname, '.'), {
+        ignored: [
+            ...watchIgnoreList,
+            ...watchIgnoreDirs
+        ],
+        ignoreInitial: true,
+        persistent: true,
+        awaitWriteFinish: {
+            stabilityThreshold: 1000,
+            pollInterval: 100
+        }
+    });
+
+    const onChange = (filename: string) => {
+        if (!filename) return;
+        const validExts = [
+            '.ts',
+            '.json'
+        ];
+
+        if (!validExts.includes(path.extname(filename))) return;
+
+        console.log('File changed:', filename);
+        
+        // in case of multiple changes, only build once
+        if (buildTimeout) clearTimeout(buildTimeout);
+        buildTimeout = setTimeout(() => {
+            // onFileChange(filename);
+            build();
+        }, 1000);
+    };
+
+    watcher.on('change', onChange);
+    watcher.on('add', onChange);
+    watcher.on('unlink', onChange);
+    watcher.on('unlinkDir', onChange);
+    watcher.on('addDir', onChange);
+};
+
 
 const update = async (): Promise<Worker> => {
     return new Promise((res, rej) => {
@@ -185,42 +229,73 @@ const runTs = async (fileName: string): Promise<void> => {
     return;
 }
 
-const npmi = async (): Promise<void> => {
-    return new Promise((res, rej) => {
-        const npm = spawn('npm', ['i'], {
-            cwd: process.cwd(),
-            env: process.env,
-            stdio: 'pipe',
-            shell: true
-        });
-        npm.stdout.on('data', (data) => {
-            console.log(data.toString());
-        });
-        npm.stderr.on('data', (data) => {
-            console.error(data.toString());
-        });
-        npm.on('close', (code) => {
-            if (code === 0) {
-                res();
-            } else {
-                rej();
-            }
-        });
-    });
-}
-
 (async() => {
     if (isMainThread) {
-        await npmi();
         await Promise.all([
             runTs('./server-functions'),
             runTs('./build/build.ts'),
-            runTs('./build/server-update.ts'),
-            runTs('./server.ts')
+            runTs('./build/server-update.ts')
         ]);
 
 
         await update();
         build();
+
+        if (env !== 'prod') {
+            const url = 'http://localhost:' + process.env.PORT;
+            // get operating system
+            const platform = os.platform();
+            switch (platform) {
+                case 'win32':
+                    // windows
+                    spawn('start', [url], {
+                        cwd: process.cwd(),
+                        env: process.env,
+                        stdio: 'pipe',
+                        shell: true
+                    });
+                    break;
+                case 'darwin':
+                    // mac
+                    spawn('open', [url], {
+                        cwd: process.cwd(),
+                        env: process.env,
+                        stdio: 'pipe',
+                        shell: true
+                    });
+                    break;
+                case 'linux':
+                    // linux
+                    spawn('xdg-open', [url], {
+                        cwd: process.cwd(),
+                        env: process.env,
+                        stdio: 'pipe',
+                        shell: true
+                    });
+                    break;
+                default:
+                    console.error('Unknown operating system');
+                    break;
+            }
+        }
+
+        process.stdin.on('data', (data) => {
+            switch(data.toString().trim()) {
+                case 'update':
+                    server.terminate();
+                    update(); // forces full update
+                    newServer();
+                    break;
+                case 'build':
+                    build(); // forces full rebuild
+                    break;
+                case 'exit':
+                    process.exit(0);
+                case 'rs':
+                    server.terminate();
+                    newServer();
+                    break;
+            }
+        });
     }
 })();

@@ -11,7 +11,7 @@
             // "priority": [], // put these files at the top of this stream
             "files": [
                 // adding --ignore-build to the end of a url will prevent it from being added to the build.ext or build.min.ext
-                // http/https urls are ignored by default, to add them to the build, add --force to the end.
+                // http/https urls are ignored by default, to add them to the build, add to the end.
                 // It will still append them above the build.ext or build.min.ext in the html though
                 // If you want to remove something, just comment it out here
 
@@ -23,7 +23,7 @@
                 "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css",
                 "https://cdn.jsdelivr.net/gh/Eonasdan/tempus-dominus@master/dist/css/tempus-dominus.css",
                 // entire folder
-                "../static/css"
+                "../static/css" // ,
                 // can do scss
                 // "../static/scss/style.scss"
                 // can also do specific files

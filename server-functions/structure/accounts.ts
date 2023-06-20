@@ -21,9 +21,9 @@ type AccountObject = {
     name: string;
     email: string;
     verified: number;
-    passwordChange: string;
+    passwordChange?: string;
     tatorBucks: number;
-    discordLink: string; // json string
+    discordLink?: string; // json string
 }
 
 
@@ -222,6 +222,20 @@ export default class Account {
         return fn as NextFunction;
     }
 
+    static isSignedIn(req: Request, res: Response, next: NextFunction) {
+        const { session: { account } } = req;
+
+        if (!account) {
+            return Status.from('account.serverError', req).send(res);
+        }
+
+        if (account.username === 'guest') {
+            return Status.from('account.notLoggedIn', req).send(res);
+        }
+
+        next();
+    }
+
     static async all(): Promise<Account[]> {
         const query = `
             SELECT * FROM Accounts
@@ -383,9 +397,9 @@ export default class Account {
     name: string;
     email: string;
     verified: boolean;
-    passwordChange: string|null;
+    passwordChange?: string|null;
     tatorBucks: number;
-    discordLink: DiscordLink;
+    discordLink?: DiscordLink;
 
     constructor(obj: AccountObject) {
         this.username = obj.username;
@@ -398,7 +412,7 @@ export default class Account {
         this.verified = !!obj.verified;
         this.passwordChange = obj.passwordChange;
         this.tatorBucks = obj.tatorBucks;
-        this.discordLink = JSON.parse(obj.discordLink) as DiscordLink;
+        this.discordLink = JSON.parse(obj.discordLink || '{}') as DiscordLink;
     }
 
     get safe() {

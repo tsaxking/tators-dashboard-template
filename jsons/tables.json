@@ -651,6 +651,11 @@
             "permissions": [],
             "description": "Users cannot view data",
             "rank": 4
+        }, {
+            "name": "guest",
+            "permissions": [],
+            "description": "Guests cannot view data",
+            "rank": 5
         }],
         "description": "Permissions for each role"
     },

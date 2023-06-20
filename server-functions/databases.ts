@@ -2,7 +2,6 @@ import * as sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 import * as path from 'path';
 import * as fs from 'fs';
-import { getJSON } from './files';
 
 type Resolve<T> = (value?: T | PromiseLike<T>) => void;
 type Reject = (reason?: any) => void;
@@ -145,6 +144,8 @@ export class DB {
 
 
     async info(): Promise<any> {
+        // to avoid files.js being run at the main.js time
+        const { getJSON } = require('./files');
         const tableData = await getJSON('/tables');
         const query = `
             SELECT name

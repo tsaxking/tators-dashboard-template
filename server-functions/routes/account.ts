@@ -23,7 +23,7 @@ router.post('/get-roles', async(req, res) => {
 
 // sign in page (sign up is the same)
 const getSignIn = async (req: Request, res: Response) => {
-    const html = await getTemplate('/accounts/sign-in');
+    const html = await getTemplate('account/sign-in');
     res.send(html);
 }
 

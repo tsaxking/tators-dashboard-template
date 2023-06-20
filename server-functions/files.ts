@@ -7,6 +7,10 @@ import render from 'node-html-constructor/versions/v4';
 import callsite from 'callsite';
 import { workerData } from 'worker_threads';
 import ObjectsToCsv from 'objects-to-csv';
+import { config } from 'dotenv';
+
+
+config();
 
 
 // console.log(build);
@@ -16,7 +20,8 @@ import ObjectsToCsv from 'objects-to-csv';
  *
  * @type {*}
  */
-const env = process.argv[2] || 'dev';
+const env = workerData?.mode || process.argv[2] || 'dev';
+
 
 /**
  * Gets a json from the jsons folder
@@ -212,6 +217,7 @@ const buildJSON = getJSONSync('../build/build.json');
  * @returns {*}
  */
 const runBuilds = (template: string): string => {
+    // console.log('Running build on template: ', template);
     const root = parse(template);
     const insertBefore = (parent: HTMLElement, child: HTMLElement, before: HTMLElement) => {
         parent.childNodes.splice(parent.childNodes.indexOf(before), 0, child);
@@ -234,9 +240,11 @@ const runBuilds = (template: string): string => {
                 (stream.files as string[]).forEach(f => {
                     // console.log(f);
 
-                    // find --ignore-build
-                    const regex = /--ignore-build\s*/g;
-                    if (!regex.test(f)) return;
+                    if (!f.endsWith('--ignore-build')) {
+                        if (!f.startsWith('http') && !f.endsWith('--force')) {
+                            return;
+                        }
+                    }
 
 
                     // console.log('Includes ignore build', f);
@@ -260,9 +268,12 @@ const runBuilds = (template: string): string => {
 
                 (stream.files as string[]).forEach(f => {
                     // console.log(f);
-                    // find --ignore-build
-                    const regex = /--ignore-build\s*/g;
-                    if (!regex.test(f)) return;
+
+                    if (!f.endsWith('--ignore-build')) {
+                        if (!f.startsWith('http') && !f.endsWith('--force')) {
+                            return;
+                        }
+                    }
 
                     // console.log('Includes ignore build', f);
                     f = f.replace('--ignore-build', '').trim();
@@ -283,9 +294,12 @@ const runBuilds = (template: string): string => {
                 s.setAttribute('src', `${buildJSON.buildDir}${s.attributes.src}`);
                 (stream.files as string[]).forEach(f => {
                     // console.log(f);
-                    // find --ignore-build
-                    const regex = /--ignore-build\s*/g;
-                    if (!regex.test(f)) return;
+
+                    if (!f.endsWith('--ignore-build')) {
+                        if (!f.startsWith('http') && !f.endsWith('--force')) {
+                            return;
+                        }
+                    }
 
                     // console.log('Includes ignore build', f);
                     f = f.replace('--ignore-build', '').trim();
@@ -303,9 +317,12 @@ const runBuilds = (template: string): string => {
                 l.setAttribute('href', `${buildJSON.buildDir}${l.attributes.href}`);
                 (stream.files as string[]).forEach(f => {
                     // console.log(f);
-                    // find --ignore-build
-                    const regex = /--ignore-build\s*/g;
-                    if (!regex.test(f)) return;
+
+                    if (!f.endsWith('--ignore-build')) {
+                        if (!f.startsWith('http') && !f.endsWith('--force')) {
+                            return;
+                        }
+                    }
 
                     // console.log('Includes ignore build', f);
                     f = f.replace('--ignore-build', '').trim();
@@ -321,7 +338,7 @@ const runBuilds = (template: string): string => {
                     const scriptTag = root.querySelector(`script[src="${script}"]`);
                     if (!scriptTag) return;
 
-                    (builds[script] as string[]).forEach(build => {
+                    (workerData?.builds[script] as string[]).forEach(build => {
                         const newScript = parse(`<script src="${build.replace('\\', '')}"></script>`);
                         insertBefore(scriptTag.parentNode, newScript, scriptTag);
                     });
@@ -330,7 +347,7 @@ const runBuilds = (template: string): string => {
                     const linkTag = root.querySelector(`link[href="${script}"]`);
                     if (!linkTag) return;
 
-                    (builds[script] as string[]).forEach(build => {
+                    (workerData?.builds[script] as string[]).forEach(build => {
                         const newLink = parse(`<link rel="stylesheet" href="${build.replace('\\', '')}">`);
                         insertBefore(linkTag.parentNode, newLink, linkTag);
                     });
@@ -338,6 +355,7 @@ const runBuilds = (template: string): string => {
                 }
             });
     }
+
     return root.toString();
 }
 

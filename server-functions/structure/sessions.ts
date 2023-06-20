@@ -25,6 +25,20 @@ export class Session {
     }
     static addSession(session: Session) {
         Session._sessions[session.id] = session;
+        if (!session.account) {
+            session.signOut();
+            session.account = new Account({
+                username: 'guest',
+                key: '',
+                salt: '',
+                verified: 1,
+                roles: JSON.stringify(['guest']),
+                email: '',
+                name: 'Guest',
+                tatorBucks: 0,
+                info: '{}'
+            })
+        }
     }
     static removeSession(session: Session) {
         delete Session._sessions[session.id];

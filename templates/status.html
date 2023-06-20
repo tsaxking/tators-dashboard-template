@@ -31,5 +31,17 @@
     </div>
 
 
+    <div id="redirect" class="d-none">
+        {{ redirect }}
+    </div>
+
     <script src="lite.js"></script>
+
+    <script>
+        const redirect = document.getElementById('redirect').innerText;
+
+        if (redirect) {
+            location.pathname = redirect;
+        }
+    </script>
 </body>

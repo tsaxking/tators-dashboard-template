@@ -356,6 +356,24 @@ const runFunction = async(fn: () => any|Promise<any>) => {
     console.log('Finished running function:', fn.name, 'in', Date.now() - now, 'ms');
 }
 
+
+const initEnv = () => {
+    if (fs.existsSync(path.resolve(__dirname, '../.env'))) return;
+    console.log('Creating .env file...');
+    fs.writeFileSync(path.resolve(__dirname, '../.env'), `
+        PORT="3000"
+        DB_KEY=""
+        DOMAIN="http://localhost:3000"
+        
+        SENDGRID_API_KEY=""
+
+        AUTO_SIGN_IN_USERNAME=""
+    `);
+}
+
+
+
+
 export const serverUpdate = async () => {
     try {
         await runTs(path.resolve(__dirname, './updates'));
@@ -373,6 +391,7 @@ export const serverUpdate = async () => {
         return runUpdates(updates);
     }
 
+    await runFunction(initEnv);
     await runFunction(initDB);
     await runFunction(tableTest);
     await runFunction(updateTests);

@@ -86,7 +86,7 @@ app.use('/uploads', express.static(path.resolve(__dirname, './uploads')));
 app.use((req, res, next) => {
     req.io = io;
     req.start = Date.now();
-    req.ip = getClientIp(req) || '';
+    console.log(req.ip);
 
     next();
 });
@@ -302,7 +302,7 @@ app.get('/get-links', async (req, res) => {
 
 
 
-app.get('/*', async (req, res, next) => {
+app.get('/*', Account.isSignedIn, async (req, res, next) => {
     const permissions = await req.session.account?.getPermissions();
 
     if (permissions?.permissions.includes('logs')) {

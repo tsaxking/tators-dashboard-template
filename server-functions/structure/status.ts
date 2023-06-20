@@ -4,6 +4,18 @@ import Account from "./accounts";
 import { Email, EmailType } from "./email";
 import { config } from "dotenv";
 import { Session } from "./sessions";
+import { Server } from "socket.io";
+
+
+declare global {
+    namespace Express {
+        interface Request {
+            session: Session;
+            start: number;
+            io: Server;
+        }
+    }
+}
 
 config();
 
@@ -158,6 +170,10 @@ export class Status {
         public data?: string
     ) {
 
+        if (!data) {
+            data = '{}';
+        }
+
         log(LogType.status, {
             date: Date.now(),
             sessionId: request.session.id,
@@ -166,7 +182,7 @@ export class Status {
             email: request.session.account?.email,
             title,
             code,
-            data: data || 'No data provided.'
+            data: data == '{}' ? 'No data provided.' : data
         });
 
 
@@ -199,7 +215,10 @@ export class Status {
     }
 
     get html() {
-        return getTemplateSync('status', this);
+        return getTemplateSync('status', {
+            ...this,
+            data: this.data ? JSON.parse(this.data) : 'No data provided.'
+        });
     }
 
     get json() {
