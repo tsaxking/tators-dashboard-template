@@ -27,13 +27,13 @@ const getSignIn = async (req: Request, res: Response) => {
     res.send(html);
 }
 
-router.get('/sign-in', Account.allowRoles('guest'), getSignIn as unknown as NextFunction);
-router.get('/sign-up', Account.allowRoles('guest'), getSignIn as unknown as NextFunction);
+router.get('/sign-in', Account.notSignedIn, getSignIn as unknown as NextFunction);
+router.get('/sign-up', Account.notSignedIn, getSignIn as unknown as NextFunction);
 
 
 
 
-router.post('/sign-in', Account.allowRoles('guest'), async(req, res) => {
+router.post('/sign-in', Account.notSignedIn, async(req, res) => {
     const { username, password } = req.body;
 
     const account = await Account.fromUsername(username);
@@ -54,7 +54,7 @@ router.post('/sign-in', Account.allowRoles('guest'), async(req, res) => {
 
 
 
-router.post('/sign-up', Account.allowRoles('guest'), async(req, res) => {
+router.post('/sign-up', Account.notSignedIn, async(req, res) => {
     const {
         username,
         password,

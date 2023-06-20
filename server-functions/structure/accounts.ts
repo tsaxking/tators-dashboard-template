@@ -236,6 +236,20 @@ export default class Account {
         next();
     }
 
+    static notSignedIn(req: Request, res: Response, next: NextFunction) {
+        const { session: { account } } = req;
+
+        if (!account) {
+            return Status.from('account.serverError', req).send(res);
+        }
+
+        if (account.username !== 'guest') {
+            return Status.from('account.loggedIn', req).send(res);
+        }
+
+        next();
+    }
+
     static async all(): Promise<Account[]> {
         const query = `
             SELECT * FROM Accounts

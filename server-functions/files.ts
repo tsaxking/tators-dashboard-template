@@ -339,7 +339,7 @@ const runBuilds = (template: string): string => {
                     if (!scriptTag) return;
 
                     (workerData?.builds[script] as string[]).forEach(build => {
-                        const newScript = parse(`<script src="${build.replace('\\', '')}"></script>`);
+                        const newScript = parse(`<script src="${build.replace(/\\/g, '/')}"></script>`);
                         insertBefore(scriptTag.parentNode, newScript, scriptTag);
                     });
                     scriptTag.remove();
@@ -348,7 +348,7 @@ const runBuilds = (template: string): string => {
                     if (!linkTag) return;
 
                     (workerData?.builds[script] as string[]).forEach(build => {
-                        const newLink = parse(`<link rel="stylesheet" href="${build.replace('\\', '')}">`);
+                        const newLink = parse(`<link rel="stylesheet" href="${build.replace(/\\/g, '/')}">`);
                         insertBefore(linkTag.parentNode, newLink, linkTag);
                     });
                     linkTag.remove();
