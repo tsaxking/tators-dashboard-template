@@ -55,20 +55,18 @@
                 "[ts]../static/js/submodules/custom-bootstrap/src",
 
                 // all js files in these folders (no ts)
-                "../static/js/top",
-                "../static/js/bottom"
+                "[ts]../static/js/top",
+                "[ts]../static/js/bottom"
 
                 // specific files
             ]
         },
         "lite.js": {
             "files": [
-                "../static/js/top/requests.js",
                 "https://code.jquery.com/jquery-3.1.1.min.js",
                 "https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js",
                 "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js",
-                "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/3.2.0/js/bootstrap-colorpicker.min.js",
-                "../static/js/top/notifications.js"
+                "https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/3.2.0/js/bootstrap-colorpicker.min.js"
             ]
         }
     },

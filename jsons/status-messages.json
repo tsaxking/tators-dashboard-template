@@ -123,7 +123,13 @@
         "code": 500,
         "instructions": ""
     },
-
+    "account.alreadyLoggedIn": {
+        "title": "Accounts",
+        "message": "Already logged in",
+        "status": "error",
+        "code": 404,
+        "instructions": ""
+    },
 
 
 

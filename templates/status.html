@@ -41,7 +41,7 @@
         const redirect = document.getElementById('redirect').innerText;
 
         if (redirect) {
-            location.pathname = redirect;
+            location.pathname = redirect.trim();
         }
     </script>
 </body>

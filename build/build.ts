@@ -536,7 +536,10 @@ const buildInit = async(streamName: string, buildStream: BuildStream): Promise<v
                 // console.log('Copying file:', file);
                 if (file.includes('--ignore-build')) return;
                 if (file.includes('http')) {
-                    if (!file.includes('--force')) return;
+                    if (!file.includes('--force')) {
+                        parentPort?.postMessage('Files: ' + JSON.stringify([file]));
+                        return;
+                    }
                     file = file.replace('--force', '');
                 }
                 file = file.trim();
@@ -641,8 +644,6 @@ export const doBuild = async(): Promise<void> => {
     return new Promise(async(res, rej) => {
         try {
             if (isMainThread) {
-
-
                 workers = Object.keys(build.streams)
                     .map((streamName): Worker => {
                         const worker = new Worker(
