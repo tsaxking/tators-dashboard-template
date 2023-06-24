@@ -164,8 +164,11 @@ const fromUrl = async (url: string): Promise<{ data: any, safeUrl: string }> => 
         safeUrl = safeUrl
             .split('')
             .map((c) => c === char ? '-' : c)
-            .join('') + path.extname(url); // add extension back lol
+            .join(''); 
     }
+
+    // add extension back lol
+    safeUrl += path.extname(url);
 
     return new Promise(async (res, rej) => {
         try {

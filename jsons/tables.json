@@ -974,25 +974,5 @@
                 "init": "user TEXT NOT NULL"
             }
         }
-    },
-
-
-
-
-
-    "ids": {
-        "columns": {
-            "id": {
-                "type": "string",
-                "primaryKey": true,
-                "description": "The id",
-                "init": "id TEXT UNIQUE NOT NULL"
-            },
-            "used": {
-                "type": "boolean",
-                "description": "Whether or not the id is used",
-                "init": "used INTEGER NOT NULL"
-            }
-        }
     }
 }

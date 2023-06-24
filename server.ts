@@ -236,7 +236,7 @@ app.use((req, res, next) => {
 
 
 import admin from './server-functions/routes/admin';
-import { getTemplateSync, getJSON } from './server-functions/files';
+import { getTemplateSync, getJSON, LogType, log } from './server-functions/files';
 app.use('/admin', admin);
 
 
@@ -423,7 +423,7 @@ app.use((req, res, next) => {
 
     logCache.push(csvObj);
 
-    new ObjectsToCsv([csvObj]).toDisk('./logs.csv', { append: true });
+    log(LogType.request, csvObj);
 });
 
 

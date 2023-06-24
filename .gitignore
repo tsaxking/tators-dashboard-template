@@ -8,6 +8,8 @@ lerna-debug.log*
 
 *.js
 
+ids.txt
+
 sessions.txt
 /build/cache/
 archive/
