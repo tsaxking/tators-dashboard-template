@@ -74,7 +74,9 @@ io.on('connection', (socket) => {
 
 
 
-    socket.on('disconnect', () => console.log('user disconnected'));
+    socket.on('disconnect', () => {
+        // reconnect
+    });
 });
 
 app.use(express.urlencoded({ extended: true }));

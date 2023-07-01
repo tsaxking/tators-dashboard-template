@@ -102,6 +102,8 @@ export class Session {
     latestActivity: number = Date.now();
     account: Account|null = null;
     socket?: Socket;
+    currentEvent?: string;
+    currentPage?: string;
 
     constructor(req?: CustomRequest, res?: Response) {
         if (req) this.ip = getClientIp(req);
