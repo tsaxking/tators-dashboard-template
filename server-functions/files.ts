@@ -23,6 +23,25 @@ config();
 const env = workerData?.mode || process.argv[2] || 'dev';
 
 
+const filepathBuilder = (file: string, ext: string, parentFolder: string): string => {
+    let output: string;
+    if (!file.endsWith(ext)) file += ext;
+
+    if (file.startsWith('.')) {
+        // use callsite
+        const stack = callsite(),
+            requester = stack[1].getFileName(),
+            requesterDir = path.dirname(requester);
+        output =  path.resolve(requesterDir, file);
+    } else {
+        output = path.resolve(__dirname, parentFolder, ...file.split('/'));
+    }
+
+
+    return output;
+};
+
+
 /**
  * Gets a json from the jsons folder
  *
@@ -38,17 +57,7 @@ const env = workerData?.mode || process.argv[2] || 'dev';
  * 
  */
 export function getJSONSync(file: string): any {
-    let p: string = file;
-    if (!file.includes('.json')) file +='.json';
-    if (!(file.startsWith('.'))) p = path.resolve('./jsons', file);
-    else {
-        const stack = callsite(),
-            requester = stack[1].getFileName(),
-            requesterDir = path.dirname(requester);
-        p = path.resolve(requesterDir, p);
-    }
-    
-    p = path.resolve(__dirname, p);
+    const p = filepathBuilder(file, '.json', '../jsons');
 
     if (!fs.existsSync(p)) {
         console.error('Error reading JSON file: ' + p, 'file does not exist. Input: ', file);
@@ -85,17 +94,7 @@ export function getJSONSync(file: string): any {
  */
 export function getJSON(file: string): Promise<any> {
     return new Promise((res, rej) => {
-        let p: string = file;
-        if (!file.includes('.json')) file +='.json';
-        if (!(file.startsWith('.'))) p = path.resolve('./jsons', file);
-        else {
-            const stack = callsite(),
-                requester = stack[1].getFileName(),
-                requesterDir = path.dirname(requester);
-            p = path.resolve(requesterDir, p);
-        }
-        
-        p = path.resolve(__dirname, p);
+        const p = filepathBuilder(file, '.json', '../jsons');
     
         if (!fs.existsSync(p)) {
             console.error('Error reading JSON file: ' + p, 'file does not exist. Input: ', file);
@@ -136,17 +135,7 @@ export function getJSON(file: string): Promise<any> {
  * 
  */
 export function saveJSONSync(file: string, data: any) {
-    let p: string = file;
-    if (!file.includes('.json')) file +='.json';
-    if (!(file.startsWith('.'))) p = path.resolve('./jsons', file);
-    else {
-        const stack = callsite(),
-            requester = stack[1].getFileName(),
-            requesterDir = path.dirname(requester);
-        p = path.resolve(requesterDir, p);
-    }
-    
-    p = path.resolve(__dirname, p);
+    const  p = filepathBuilder(file, '.json', '../jsons');
 
     try {
         JSON.stringify(data);
@@ -172,17 +161,8 @@ export function saveJSONSync(file: string, data: any) {
  */
 export function saveJSON(file: string, data: any): Promise<boolean> {
     return new Promise((res, rej) => {
-        let p: string = file;
-        if (!file.includes('.json')) file +='.json';
-        if (!(file.startsWith('.'))) p = path.resolve('./jsons', file);
-        else {
-            const stack = callsite(),
-                requester = stack[1].getFileName(),
-                requesterDir = path.dirname(requester);
-            p = path.resolve(requesterDir, p);
-        }
-        
-        p = path.resolve(__dirname, p);
+        const  p = filepathBuilder(file, '.json', '../jsons');
+
         try {
             JSON.stringify(data);
         } catch (e) {
@@ -209,6 +189,8 @@ export function saveJSON(file: string, data: any): Promise<boolean> {
 let builds: any = workerData?.builds || {};
 const buildJSON = getJSONSync('../build/build.json');
 !buildJSON.buildDir.endsWith('/') && (buildJSON.buildDir += '/'); // make sure it ends with a slash 
+
+// console.log(workerData.builds);
 
 /**
  * Parses the html and adds the builds
@@ -377,17 +359,8 @@ export function getTemplateSync(file: string, options?: ConstructorOptions): str
     if (templates.has(file)) {
         return templates.get(file) as string;
     }
-    let p: string = file;
-    if (!file.includes('.html')) file +='.html';
-    if (!(file.startsWith('.'))) p = path.resolve('./templates', file);
-    else {
-        const stack = callsite(),
-            requester = stack[1].getFileName(),
-            requesterDir = path.dirname(requester);
-        p = path.resolve(requesterDir, p);
-    }
-    
-    p = path.resolve(__dirname, p);
+
+    const p = filepathBuilder(file, '.html', '../templates');
 
     if (!fs.existsSync(p)) {
         console.error(`Template ${p} does not exist. Input:`, file);
@@ -412,17 +385,8 @@ export function getTemplate(file: string, options?: ConstructorOptions): Promise
         if (templates.has(file)) {
             return res(templates.get(file) as string);
         }
-        let p: string = file;
-        if (!file.includes('.html')) file +='.html';
-        if (!(file.startsWith('.'))) p = path.resolve('./templates', file);
-        else {
-            const stack = callsite(),
-                requester = stack[1].getFileName(),
-                requesterDir = path.dirname(requester);
-            p = path.resolve(requesterDir, p);
-        }
         
-        p = path.resolve(__dirname, p);
+        const p = filepathBuilder(file, '.html', '../templates');
     
         if (!fs.existsSync(p)) {
             console.error(`Template ${p} does not exist. Input:`, file);
@@ -447,18 +411,7 @@ export function getTemplate(file: string, options?: ConstructorOptions): Promise
  * @returns {boolean} whether the file was saved successfully
  */
 export function saveTemplateSync(file: string, data: string) {
-    let p: string = file;
-    if (!file.includes('.html')) file +='.html';
-    if (!(file.startsWith('.'))) p = path.resolve('./templates', file);
-    else {
-        const stack = callsite(),
-            requester = stack[1].getFileName(),
-            requesterDir = path.dirname(requester);
-        p = path.resolve(requesterDir, p);
-    }
-    
-    p = path.resolve(__dirname, p);
-
+    const p = filepathBuilder(file, '.html', '../templates');
 
     fs.writeFileSync(p, data, 'utf8');
     return true;
@@ -474,18 +427,7 @@ export function saveTemplateSync(file: string, data: string) {
  */
 export function saveTemplate(file: string, data: string): Promise<boolean> {
     return new Promise((res, rej) => {
-        let p: string = file;
-        if (!file.includes('.html')) file +='.html';
-        if (!(file.startsWith('.'))) p = path.resolve('./templates', file);
-        else {
-            const stack = callsite(),
-                requester = stack[1].getFileName(),
-                requesterDir = path.dirname(requester);
-            p = path.resolve(requesterDir, p);
-        }
-        
-        p = path.resolve(__dirname, p);
-
+        const p = filepathBuilder(file, '.html', '../templates');
 
         fs.writeFile(p, data, 'utf8', err => {
             if (err) return rej(err);

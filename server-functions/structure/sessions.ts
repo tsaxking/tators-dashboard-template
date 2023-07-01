@@ -12,7 +12,12 @@ type CustomRequest = Request & { session: Session };
 
 export class Session {
     static middleware(req: CustomRequest, res: Response, next: NextFunction) {
-        if (!req.session) {
+        const id = req.headers.cookie ? parseCookie(req.headers.cookie).ssid : null;
+        console.log('Session ID: ', id);
+
+        if (id && Session.sessions[id]) {
+            req.session = Session.sessions[id];
+        } else {
             req.session = new Session(req, res);
             Session.addSession(req.session);
         }
@@ -37,7 +42,7 @@ export class Session {
                 name: 'Guest',
                 tatorBucks: 0,
                 info: '{}'
-            })
+            });
         }
     }
     static removeSession(session: Session) {
@@ -109,6 +114,8 @@ export class Session {
         if (req) this.ip = getClientIp(req);
         else this.ip = 'unknown';
         this.id = uuid();
+
+        console.log('Creating session: ', this.id);
 
         if (res) res.cookie('ssid', this.id, {
             httpOnly: true,

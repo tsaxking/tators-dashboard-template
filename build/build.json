@@ -56,6 +56,9 @@
 
                 // all js files in these folders (no ts)
                 "[ts]../static/js/top",
+                "[ts]../static/js/classes",
+                "[ts]../static/js/pre-page",
+                "[ts]../static/js/pages",
                 "[ts]../static/js/bottom"
 
                 // specific files

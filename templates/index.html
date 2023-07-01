@@ -16,7 +16,6 @@
 </head>
 
 <body>
-    <script src="script.js"></script>
     <div id="contextmenu-container" class="d-none position-fixed bg-dark rounded shadow">
         <!-- <div class="dropdown"> -->
         <div id="contextmenu" class="bg-dark rounded"></div>
@@ -165,19 +164,21 @@
             <nav class="navbar-dark">
                 <ul class="navbar-nav">
                     <repeat  id="navSections">
-                        <script cstr>
-                            if (type == 'navTitle') `
-                            <li>
-                                <h5 class="text-muted px-3 text-capitalize no-select">${title}</h5>
-                            </li>`; else `
-                            <li>
-                                <a href="${pathname}" class="nav-link px-5 toggle-elements no-select" data-toggle-class=".page" data-target="#${lowercaseTitle}" data-page="/${lowercaseTitle}">
-                                    <span class="me-2">
-                                        ${icon}
-                                        <span>${name}</span>
-                                    </span>
-                                </a>
-                            </li>`;
+                        <script cstr id="navScript">
+                            if (type == 'navTitle') {
+                                return `<li>
+                                    <h5 class="text-muted px-3 text-capitalize no-select">${title}</h5>
+                                </li>`;
+                            } else {
+                                return `<li>
+                                    <a href="${pathname}" class="nav-link px-5 toggle-elements no-select" data-toggle-class=".page" data-target="#${lowercaseTitle}" data-page="/${lowercaseTitle}">
+                                        <span class="me-2">
+                                            ${icon}
+                                            <span>${name}</span>
+                                        </span>
+                                    </a>
+                                </li>`;
+                            }
                         </script>
                     </repeat>
                 </ul>
@@ -234,7 +235,7 @@
                 </div>
 
                 <!-- Start of footer -->
-                <footer class="pb-5">
+                <footer class="pb-5 no-select">
                     <br>
                     <hr class="dropdown-divider">
                     <i>&copy; {{ year }} FIRST Robotics Competition Team 2122 | Team Tators </i>
@@ -245,6 +246,7 @@
     <!-- End of main -->
 
     <iframe id="download" class="d-none"></iframe>
+    <script src="script.js"></script>
 </body>
 
 </html>

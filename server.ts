@@ -3,10 +3,7 @@ import { Server } from 'socket.io';
 import * as http from 'http';
 import * as path from 'path';
 import * as fs from 'fs';
-import ObjectsToCsv from 'objects-to-csv';
-import { getClientIp } from 'request-ip';
 import { Session } from './server-functions/structure/sessions';
-import builder from './server-functions/page-builder';
 import { emailValidation } from './server-functions/middleware/spam-detection';
 import { Worker, isMainThread, workerData, parentPort } from 'worker_threads';
 import { config } from 'dotenv';
@@ -238,7 +235,7 @@ app.use((req, res, next) => {
 
 
 import admin from './server-functions/routes/admin';
-import { getTemplateSync, getJSON, LogType, log } from './server-functions/files';
+import { getTemplateSync, getJSON, LogType, log, getTemplate } from './server-functions/files';
 app.use('/admin', admin);
 
 
@@ -317,36 +314,48 @@ app.get('/*', Account.isSignedIn, async (req, res, next) => {
     const cstr = {
         pagesRepeat: pages.map(page => {
             return page.links.map(l => {
+                if (!l.display) return;
                 return {
                     title: l.name,
                     content: getTemplateSync(l.html),
                     lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
-                    prefix: l.prefix 
+                    prefix: l.prefix,
+                    year: new Date().getFullYear()
                 }
             })
-        }).flat(Infinity),
+        }).flat(Infinity).filter(Boolean),
+
+
         navSections: pages.map(page => {
             return [
                 {
-                    title: page.title,
-                    type: 'navTitle'
+                    navScript: {
+                        title: page.title,
+                        type: 'navTitle'
+                    }
                 },
                 ...page.links.map(l => {
+                    if (!l.display) return;
                     return {
-                        name: l.name,
-                        type: 'navLink',
-                        pathname: l.pathname,
-                        icon: l.icon,
-                        lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
-                        prefix: l.prefix
+                        navScript: {
+                            name: l.name,
+                            type: 'navLink',
+                            pathname: l.pathname,
+                            icon: l.icon,
+                            lowercaseTitle: l.name.toLowerCase().replace(/ /g, '-'),
+                            prefix: l.prefix
+                        }
                     }
                 })
             ];
-        }).flat(Infinity),
-        year: new Date().getFullYear(),
+        }).flat(Infinity).filter(Boolean),
+
+
         description: 'Team Tators Dashboard',
         keywords: 'Tators, Dashboard, 2122, FRC, FIRST'
     };
+
+    res.send(await getTemplate('index', cstr));
 });
 
 

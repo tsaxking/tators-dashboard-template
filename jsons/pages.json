@@ -1,15 +1,253 @@
-[{
-    "name": "Home",
-    // lowercaseTitle converts spaces into hyphens
-    // url is the path to the page, it's the lowercase title with a slash in front
-    "script": "/home.js", // Path to script (passed into getJSONSync())
-    "pageTitle": "", // Single word or small phrase
-    "keywords": [
-        // SEO Keywords
-    ],
-    "description": "", // SEO Description
-    "links": [{
-        // same format as pages
-    }], // Sub Pages (used for dropdowns)
-    "build": false // Whether or not to use the builder
-}]
+// [{
+//     "name": "Home",
+//     // lowercaseTitle converts spaces into hyphens
+//     // url is the path to the page, it's the lowercase title with a slash in front
+//     "script": "/home.js", // Path to script (passed into getJSONSync())
+//     "pageTitle": "", // Single word or small phrase
+//     "keywords": [
+//         // SEO Keywords
+//     ],
+//     "description": "", // SEO Description
+//     "links": [{
+//         // same format as pages
+//     }], // Sub Pages (used for dropdowns)
+//     "build": false // Whether or not to use the builder
+// }]
+
+[
+    // █▄█ ▄▀▄ █▄ ▄█ ██▀ 
+    // █ █ ▀▄▀ █ ▀ █ █▄▄ 
+    {
+        "title": "Home",
+        "links": [
+            {
+            "name": "Dashboard",
+            "html": "/home/dashboard",
+            "icon": "<i class=\"material-icons\">home</i>",
+            "pathname": "/dashboard",
+            "styles": [],
+            "keywords": [],
+            "description": "",
+            "screenInfo": {
+                "size": "default",
+                "color": "light"
+            },
+            "prefix": "db",
+            "display": true
+            },
+            {
+                "name": "Strategy",
+                "html": "/home/strategy",
+                "icon": "<i class=\"material-icons\">psychology</i>",
+                "pathname": "/strategy",
+                "scripts": [
+                    "strategy.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "str",
+                "display": true
+            },
+            {
+                "name": "Eliminations",
+                "html": "/home/eliminations",
+                "icon": "<i class=\"material-icons\">emoji_events</i>",
+                "pathname": "/eliminations",
+                "scripts": [
+                    "eliminations.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },  
+                "prefix": "elim",
+                "display": false
+            },
+            {
+                "name": "Whiteboard",
+                "html": "/match-strategy/whiteboard",
+                "icon": "<i class=\"material-icons\">draw</i>",
+                "pathname": "/whiteboard",
+                "scripts": [
+                    "whiteboard.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "wb",
+                "display": true
+            },
+            {
+                "name": "Settings",
+                "html": "/home/settings",
+                "icon": "<i class=\"material-icons\">settings</i>",
+                "pathname": "/settings",
+                "scripts": [
+                    "settings.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "st",
+                "display": true,
+                "permission": "settings"
+            },
+            {
+                "name": "Logs",
+                "html": "/home/logs",
+                "icon": "<i class=\"material-icons\">list</i>",
+                "pathname": "/logs",
+                "scripts": [
+                    "logs.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "lg",
+                "display": true,
+                "permission": "logs"
+            },
+            {
+                "name": "Year Analysis",
+                "html": "/home/year-analysis",
+                "icon": "<i class=\"material-icons\">trending_up</i>",
+                "pathname": "/year-analysis",
+                "scripts": [
+                    "year-analysis.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "ya",
+                "display": true
+            },
+            {
+                // TODO: Build this page
+                "name": "Personalization",
+                "html": "/home/personalization",
+                "icon": "<i class=\"material-icons\">person</i>",
+                "pathname": "/personalization",
+                "scripts": [
+                    
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "pz",
+                "display": false
+            }
+        ],
+        "display": true
+    },
+
+
+
+
+    // ▄▀▀ ▄▀▀ ▄▀▄ █ █ ▀█▀ █ █▄ █ ▄▀  
+    // ▄█▀ ▀▄▄ ▀▄▀ ▀▄█  █  █ █ ▀█ ▀▄█ 
+    {
+        "title": "Scouting",
+        "links": [
+            {
+                "name": "Scouting Checklist",
+                "html": "/scouting/checklist",
+                "icon": "<i class=\"material-icons\">fact_check</i>",
+                "pathname": "/scouting-checklist",
+                "scripts": [
+                    "checklist.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "ccl",
+                "display": true
+            },
+            {
+                "name": "Create Scouting Questions",
+                "html": "/scouting/create-scouting-questions",
+                "icon": "<i class=\"material-icons\">question_mark</i>",
+                "pathname": "/create-scouting-questions",
+                "scripts": [
+                    "create-questions.js"
+                ],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "csq",
+                "display": true,
+                "permission": "editScoutingQuestions"
+            },
+            {
+                "name": "Scouting",
+                "html": "/scouting/scouting",
+                "icon": "<i class=\"material-icons\">task</i>",
+                "pathname": "/scouting",
+                "scripts": [
+                    "scouting.js"
+                ],
+                "keywords": [],
+                "description": "",
+                "styles": [],
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "s",
+                "display": true
+            },
+            {
+                "name": "Google Sheet",
+                "html": "/scouting/google-sheet",
+                "icon": "<i class=\"material-icons\">table_chart</i>",
+                "pathname": "/google-sheet",
+                "scripts": [],
+                "styles": [],
+                "keywords": [],
+                "description": "",
+                "screenInfo": {
+                    "size": "default",
+                    "color": "light"
+                },
+                "prefix": "gs",
+                "display": false
+            }
+        ],
+        "display": true
+    }
+]

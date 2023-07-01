@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { config } from 'dotenv';
 import ts from 'typescript';
+import { spawn } from 'child_process';
 
 config();
 
@@ -14,33 +15,25 @@ console.log('\x1b[41mThis may take a few seconds, please wait...\x1b[0m');
 
 const runTs = async (filePath: string): Promise<any> => {
     return new Promise(async (res, rej) => {
-        const tsConfig = await getJSON(path.resolve(__dirname, filePath, './tsconfig.json'));
-
-        const program = ts.createProgram([filePath], {
-            ...tsConfig.compilerOptions,
-            noEmitOnError: true
+        const child = spawn('tsc', [], {
+            stdio: 'pipe',
+            shell: true,
+            cwd: filePath,
+            env: process.env
         });
-        const emitResult = program.emit();
-    
-        const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
-    
-        allDiagnostics.forEach(diagnostic => {
-            if (diagnostic.file) {
-                const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!);
-                const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-                console.log(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
-            } else {
-                console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
-            }
-        });
-    
-        const exitCode = emitResult.emitSkipped ? 1 : 0;
-    
-        if (exitCode !== 0) {
-            console.error(new Error('There was an error compiling the project'));
-        }
 
-        res(null);
+        child.on('error', console.error);
+        child.stdout.on('data', (data) => {
+            console.log(data.toString());
+        });
+
+        child.stderr.on('data', (data) => {
+            console.error(data.toString());
+        });
+
+        child.on('close', () => {   
+            res(null);
+        });
     });
 }
 
@@ -167,23 +160,23 @@ async function createTable(tableName: string, table: Table): Promise<TableStatus
 
     if (!columns) return TableStatus.NO_COLUMNS;
 
-    await Promise.all(Object.entries(columns).map(async ([columnName, {init}]) => {
+    const pragmaQuery = `
+        PRAGMA table_info("${tableName}");
+    `;
+
+    const pragmaResult = await MAIN.all(pragmaQuery);
+
+    await Promise.all(Object.entries(columns).map(([columnName, {init}]) => {
+        const columnExists = pragmaResult.find(({ name }) => name === columnName);
+        if (columnExists) return TableStatus.EXISTS;
+
+        console.log(`Column ${columnName} does not exist in table ${tableName}, creating column`);
         const query = `
-            SELECT "${columnName} "
-            FROM "${tableName}"
+            ALTER TABLE "${tableName}"
+            ADD COLUMN "${columnName}" ${init}
         `;
 
-        try {
-            await MAIN.all(query);
-        } catch {
-            console.log(`Column ${columnName} does not exist in table ${tableName}, creating column`);
-            const query = `
-                ALTER TABLE "${tableName}"
-                ADD COLUMN "${columnName}" ${init}
-            `;
-
-            await MAIN.run(query);
-        }
+        return MAIN.run(query);
     }));
 
     if (!rows) return TableStatus.SUCCESS;

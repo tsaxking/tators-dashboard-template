@@ -81,6 +81,39 @@ import * as chokidar from 'chokidar';
 config();
 
 
+
+
+
+const fromTsDir = async (dirPath: string): Promise<void> => {
+    return new Promise(async (res, rej) => {
+        try {
+            // console.log('Runnint tsc: ', dirPath);
+            const child = spawn('tsc', [], {
+                stdio: 'pipe',
+                shell: true,
+                cwd: dirPath,
+                env: process.env
+            });
+
+            child.on('error', console.error);
+            child.stdout.on('data', (data) => {
+                console.log(data.toString());
+            });
+
+            child.stderr.on('data', (data) => {
+                console.error(data.toString());
+            });
+
+            child.on('close', () => {   
+                res();
+            });
+        } catch { 
+            res();
+        }
+    });
+}
+
+
 let server: Worker;
 
 const newServer = async () => {
@@ -232,7 +265,7 @@ const runTs = async (fileName: string): Promise<void> => {
 (async() => {
     if (isMainThread) {
         await Promise.all([
-            runTs('./server-functions'),
+            fromTsDir('./server-functions'),
             runTs('./build/build.ts'),
             runTs('./build/server-update.ts')
         ]);
