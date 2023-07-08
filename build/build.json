@@ -59,7 +59,8 @@
                 "[ts]../static/js/classes",
                 "[ts]../static/js/pre-page",
                 "[ts]../static/js/pages",
-                "[ts]../static/js/bottom"
+                "[ts]../static/js/bottom",
+                "[ts]../static/js/page-permissions"
 
                 // specific files
             ]

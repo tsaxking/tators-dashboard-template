@@ -10,10 +10,20 @@ import { Socket } from 'socket.io';
 type CustomRequest = Request & { session: Session };
 
 
+
+type SocketEmit = {
+    event: string;
+    args: any;
+    room?: string;
+}
+
+
+
+
+
 export class Session {
     static middleware(req: CustomRequest, res: Response, next: NextFunction) {
         const id = req.headers.cookie ? parseCookie(req.headers.cookie).ssid : null;
-        console.log('Session ID: ', id);
 
         if (id && Session.sessions[id]) {
             req.session = Session.sessions[id];
@@ -105,17 +115,41 @@ export class Session {
     ip: string|null;
     id: string;
     latestActivity: number = Date.now();
-    account: Account|null = null;
-    socket?: Socket;
-    currentEvent?: string;
-    currentPage?: string;
+    account: Account|null = null;    
+    
+    
+    private readonly sockets: {
+        socket: Socket,
+        queue: SocketEmit[]
+    }[] = [];
+    readonly socket = {
+        emit: (event: string, ...args: any[]) => {
+            this.sockets.forEach(s => {
+                if (!s.socket.connected) return s.queue.push({ event, args });
+                
+                s.socket.emit(event, ...args);
+            });
+        },
+        to: (room: string) => {
+            return {
+                emit: (event: string, ...args: any[]) => {
+                    for (const s of this.sockets) {
+                        if (!s.socket.rooms.has(room)) continue;
+                        if (!s.socket.connected) {
+                            s.queue.push({ event, args, room });
+                            continue;
+                        }
+                        s.socket.to(room).emit(event, ...args);
+                    }
+                }
+            }
+        }
+    }
 
     constructor(req?: CustomRequest, res?: Response) {
         if (req) this.ip = getClientIp(req);
         else this.ip = 'unknown';
         this.id = uuid();
-
-        console.log('Creating session: ', this.id);
 
         if (res) res.cookie('ssid', this.id, {
             httpOnly: true,
@@ -124,7 +158,18 @@ export class Session {
     }
 
     setSocket(socket: Socket) {
-        this.socket = socket;
+        this.sockets.push({
+            socket,
+            queue: []
+        });
+    }
+
+    getSocket(req: Request): Socket|undefined {
+        const cookie = req.headers.cookie;
+        if (!cookie) throw new Error('No cookie');
+        const socket = this.sockets.find(s => s.socket.id === req.body.socketId);
+        // if (!socket) throw new Error('No socket');
+        return socket?.socket;
     }
 
     signIn(account: Account) {

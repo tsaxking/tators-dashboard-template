@@ -183,5 +183,12 @@
         "status": "error",
         "code": 500,
         "instructions": "This is an unknown error. Please try again later."
+    },
+    "page.notFound": {
+        "title": "Page not found",
+        "message": "Page not found",
+        "status": "error",
+        "code": 404,
+        "instructions": "The page you are looking for does not exist."
     }
 }
