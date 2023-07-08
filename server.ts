@@ -19,6 +19,15 @@ declare global {
             session: Session;
             start: number;
             io: Server;
+            file: {
+                id: string;
+                name: string;
+                size: number;
+                type: string;
+                ext: string;
+                contentType: string;
+                filename: string
+            }
         }
     }
 }
@@ -235,7 +244,7 @@ app.use((req, res, next) => {
 
 
 import admin from './server-functions/routes/admin';
-import { getTemplateSync, getJSON, LogType, log, getTemplate } from './server-functions/files';
+import { getTemplateSync, getJSON, LogType, log, getTemplate, fileStream, getUpload } from './server-functions/files';
 app.use('/admin', admin);
 
 
@@ -352,7 +361,11 @@ app.get('/*', Account.isSignedIn, async (req, res, next) => {
 
 
 
+app.post('file', fileStream(), (req, res, next) => {
+    req.file;
 
+    getUpload(req.file?.filename);
+});
 
 
 
