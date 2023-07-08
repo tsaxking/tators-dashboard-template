@@ -51,12 +51,8 @@ class FIRSTYear {
             matches: TBAMatch[],
             properties: FIRSTEventProperties,
             teams: TBATeam[],
-        }> = await requestFromServer({
-            url: '/events/get-tator-events',
-            method: 'POST',
-            body: {
+        }> = await ServerRequest.new('/events/get-tator-events', {
                 year: this.number
-            }
         });
         this.events = [];
         this.addEvents(...events.map(e => {

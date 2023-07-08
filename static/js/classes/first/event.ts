@@ -116,29 +116,22 @@ class FIRSTEvent {
 
         const { key } = this.info;
 
-        const scouting = await multiRequest({
-            url: '/events/get-event-scouting',
-            body: {
+        const scouting = await ServerRequest.multiple(new ServerRequest('/events/get-event-scouting', {
                 eventKey: key
-            }
-        }, {
-            url: '/events/get-event-info',
-            body: {
+            }), new ServerRequest('/events/get-event-info', {
                 eventKey: this.info.key
-            }
-        }, ...scoutingArr.map(scoutingType => ({
-            url: '/questions/get-questions',
-            body: {
+            }), 
+            ...scoutingArr.map(scoutingType => new ServerRequest('/questions/get-questions', {
                 eventKey: key,
                 type: scoutingType
-            }
-        })));
+            }))
+        );
 
-        const [ eventScouting, eventInfo, ...scoutingQuestions] : [
+        const [ eventScouting, eventInfo, ...scoutingQuestions] = scouting as [
             { matches: DBMatchScouting[], teams: DBTatorInfo[], },
             { matches: TBAMatch[], teams: TBATeam[], },
             ...string[]
-        ] = scouting;
+        ];
 
         let { matches, teams } = eventInfo;
 

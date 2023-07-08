@@ -89,11 +89,9 @@ class Heatmap {
      */
     static async fetchHeatmapDataFromServer(teamNumber: number, eventKey: string = currentEvent.info.key): Promise<HeatmapData> {
         const body = { teamNumber, eventKey };
-        const data = await requestFromServer({
-            url: '/robot-display/heatmap',
-            body,
-            cached: true
-        });
+        const data = ServerRequest.new('/robot-display/heatmap', body, /*{
+            cached: true,
+        }*/);
 
         return data;
     }

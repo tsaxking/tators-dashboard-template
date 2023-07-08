@@ -95,4 +95,31 @@ export default class TBA {
 
         return new FIRSTEvent(e);
     }
+    /**
+    * 
+    * @param {String} eventKey in the format of YYYYkey (2022idbo)
+    */
+    static async getEventInfo(eventKey: string, newData?: boolean) {
+        const [ matches, teams, info ] = await Promise.all([
+            requestFromTBA(`/event/${eventKey}/matches`, newData),
+            requestFromTBA(`/event/${eventKey}/teams`, newData),
+            requestFromTBA(`/event/${eventKey}`, newData),
+        ]);
+
+        return {
+            matches,
+            teams,
+            info,
+        }
+    }
+
+    /**
+     * 
+     * @param {Number} year
+     * @param {Number} teamNumber 
+     * @returns {Array} of strings of all of the team's event keys 
+     */
+    static async getAllEvents(year: number, teamNumber: number, newData?: boolean): Promise<string[]> {
+        return await requestFromTBA(`/team/frc${teamNumber}/events/${year}/keys`, newData);
+    }
 }
