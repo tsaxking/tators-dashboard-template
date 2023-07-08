@@ -355,6 +355,8 @@ app.get('/*', Account.isSignedIn, async (req, res, next) => {
         keywords: 'Tators, Dashboard, 2122, FRC, FIRST'
     };
 
+    // console.log(cstr);
+
     res.send(await getTemplate('index', cstr));
 });
 

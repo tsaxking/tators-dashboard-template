@@ -200,68 +200,11 @@ const fromUrl = async (url: string): Promise<{ data: any, safeUrl: string }> => 
     });
 }
 
-// const fromTsFile = async (filePath: string, stream: fs.WriteStream, ext: string, streamName: string): Promise<any> => {
-//     return new Promise(async (res, rej) => {
-//         try {
-//             const tsConfig = readJSON(path.resolve(__dirname, filePath, './tsconfig.json'));
-
-//             const program = ts.createProgram([filePath], {
-//                 ...tsConfig.compilerOptions,
-//                 noEmitOnError: true
-//             });
-//             const emitResult = program.emit();
-        
-//             const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
-        
-//             allDiagnostics.forEach(diagnostic => {
-//                 if (diagnostic.file) {
-//                     const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!);
-//                     const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-//                     // console.log(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
-//                 } else {
-//                     // console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
-//                 }
-//             });
-        
-//             const exitCode = emitResult.emitSkipped ? 1 : 0;
-        
-//             if (exitCode !== 0) {
-//                 console.error(new Error('There was an error compiling the project'));
-//             }
-
-
-//             if (tsConfig?.compilerOptions?.outFile) {
-//                 return res(fromFile(tsConfig.compilerOptions.outFile, stream, ext, streamName));
-//             }
-
-//             if (tsConfig?.compilerOptions?.outDir) {
-//                 return res(fromDirSync(tsConfig.compilerOptions.outDir, '.js', stream, [], streamName));
-//             }
-
-//             const readDir = (dirPath: string) => {
-//                 const files = fs.readdirSync(dirPath);
-//                 for (const file of files) {
-//                     if (fs.lstatSync(path.resolve(dirPath, file)).isDirectory()) {
-//                         readDir(path.resolve(dirPath, file));
-//                         continue;
-//                     }
-
-//                     if (file.endsWith('.ts')) watchIgnoreList.push(path.resolve(dirPath, file.replace('.ts', '.js')));
-//                 }
-//             };
-
-//             if (fs.lstatSync(filePath).isDirectory()) {
-//                 readDir(filePath);
-//             }
-//         } catch { res(null); }
-//     });
-// }
-
 const fromTsDir = async (dirPath: string, ext: string, stream: boolean = true): Promise<{
     content: string,
     files: string[]
 }> => {
-    console.log('Running tsc: ', dirPath);
+    // console.log('Running tsc: ', dirPath);
 
 
     return new Promise(async (res, rej) => {
@@ -379,6 +322,7 @@ const fromDir = async (dirPath: string, ext: '.js' | '.css', ignoreList: string[
         };
 
         const readDir = async (dirPath: string) => {
+            // console.log(dirPath);
             if (dirPath.includes('.git')) return;
             if (dirPath.includes('[ts]')) {
                 const {
@@ -470,17 +414,26 @@ const copyFile = async (filePath: string, streamName: string, index: number): Pr
 
             // console.log('file is not url:', filePath);
 
-            filePath = filePath.replace('[ts]', '');
+            const hasTS = filePath.includes('[ts]');
+
+            // filePath = filePath.replace('[ts]', '');
 
             // copy all files or folders from path
             await fsPromises.cp(
-                path.resolve(__dirname, filePath),
+                path.resolve(__dirname, filePath).replace('[ts]', ''),
                 path.resolve(__dirname, '..', 'static', 'build', 'dir-' + streamName.replace('.', '-'),
                     index + filePath
                         .replace(new RegExp('/', 'g'), '')
                 ),
                 { recursive: true }
             );
+
+            if (hasTS) {
+                await fsPromises.writeFile(
+                    path.resolve(__dirname, '..', 'static', 'build', 'dir-' + streamName.replace('.', '-'), index + filePath.replace(new RegExp('/', 'g'), ''), 'tsconfig.json'),
+                    frontTs
+                );
+            }
 
             res();
         } catch { 
@@ -504,9 +457,9 @@ export const buildServerFunctions = async (): Promise<void> => {
                 env: process.env
             });
 
-            // child.on('error', console.error);
-            // child.stdout.on('data', console.log);
-            // child.stderr.on('data', console.error);
+            child.on('error', console.error);
+            child.stdout.on('data', console.log);
+            child.stderr.on('data', console.error);
             child.on('close', () => {
                 res();
             });
@@ -618,39 +571,6 @@ const build = async(streamName: string, buildStream: BuildStream, ignore: string
 };
 
 
-const postBuild = async (buildStream: BuildStream): Promise<string[]> => {
-    const arr = (await Promise.all(buildStream.files.map(async (file) => {
-        // if is ts file, run ts
-        if (file.includes('[ts]')) {
-            const { files } = await fromTsDir(path.resolve(__dirname, file.replace('[ts]', '')), '.ts', false);
-            return files;
-        }
-
-        // if is file, return it
-        if (fs.existsSync(path.resolve(__dirname, file))) {
-            if (fs.lstatSync(path.resolve(__dirname, file)).isFile()) {
-                return [file];
-            } else {
-                const readDir = async (dir: string): Promise<string[]> => {
-                    return (await fsPromises.readdir(dir))
-                        .map(f => {
-                            if (fs.statSync(path.resolve(dir, f)).isDirectory()) readDir(path.resolve(dir, f));
-                            return path.resolve(dir, f);
-                        });
-                }
-
-                return (await readDir(path.resolve(__dirname, file)))
-                    .map(f => {
-                        return path.relative(__dirname, f);
-                    });
-            }
-        }
-    }))).filter(Boolean);
-
-    return arr.flat();
-};
-
-
 
 enum BuildType {
     INIT = 'init',
@@ -659,11 +579,9 @@ enum BuildType {
 
 const _runBuild = async(streamName: string, buildStream: BuildStream, buildType: BuildType, ignore: string[] = [], minify: boolean = true): Promise<void> => {
     try {
-        console.log('Running build: ', streamName);
+        // console.log('Running build: ', streamName);
         if (buildType === BuildType.INIT) await buildInit(streamName, buildStream);
         await build(streamName, buildStream, ignore, minify);
-        const files = await postBuild(buildStream);
-        parentPort?.postMessage('Files: ' + JSON.stringify(files));
     } catch (error) {
         console.error(error);
     }
@@ -701,7 +619,7 @@ export const doBuild = async(): Promise<void> => {
                             path.resolve(__dirname, './build.js'), {
                             workerData: {
                                 streamName,
-                                stream: build.streams[streamName],
+                                stream: streams[streamName],
                                 buildType: BuildType.INIT,
                                 renderedBuild: {}
                             }

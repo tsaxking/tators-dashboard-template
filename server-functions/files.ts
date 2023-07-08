@@ -356,9 +356,9 @@ type ConstructorOptions = {
  * @returns {string|boolean} false if there is an error, otherwise the html
  */
 export function getTemplateSync(file: string, options?: ConstructorOptions): string|boolean {
-    if (templates.has(file)) {
-        return templates.get(file) as string;
-    }
+    // if (templates.has(file)) {
+    //     return templates.get(file) as string;
+    // }
 
     const p = filepathBuilder(file, '.html', '../templates');
 
@@ -369,7 +369,7 @@ export function getTemplateSync(file: string, options?: ConstructorOptions): str
 
     let data = fs.readFileSync(p, 'utf8');
     data = runBuilds(data);
-    templates.set(file, data);
+    // templates.set(file, data);
     return options ? render(data, options) : data;
 };
 
@@ -382,9 +382,9 @@ export function getTemplateSync(file: string, options?: ConstructorOptions): str
  */
 export function getTemplate(file: string, options?: ConstructorOptions): Promise<string|boolean> {
     return new Promise((res, rej) => {
-        if (templates.has(file)) {
-            return res(templates.get(file) as string);
-        }
+        // if (templates.has(file)) {
+        //     return res(templates.get(file) as string);
+        // }
         
         const p = filepathBuilder(file, '.html', '../templates');
     
@@ -396,7 +396,7 @@ export function getTemplate(file: string, options?: ConstructorOptions): Promise
         fs.readFile(p, 'utf8', (err, data) => {
             if (err) return rej(err);
             data = runBuilds(data);
-            templates.set(file, data);
+            // templates.set(file, data);
             res(options ? render(data, options) : data);
         });
     });
