@@ -80,9 +80,9 @@
                 <span class="text-light me-auto">
                     <a class="navbar-brand fw-bold">&nbsp;2122</a>&nbsp; 
                     <span class="d-none">Hello, <span id="account-name" class="text-capitalize"></span></span>
-                    <i class="material-icons" id="latency">
+                    <!-- <i class="material-icons" id="latency">
                         wifi
-                    </i>
+                    </i> -->
                 </span>
 
 
@@ -103,14 +103,14 @@
                 <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#server-log-modal">
                     <i class="material-icons">dns</i>
                 </button> -->
-                <div class="btn-group">
+                <!-- <div class="btn-group">
                     <button class="btn btn-primary btn-sm" id="open-fullscreen">Fullscreen</button>
                     <button class="btn btn-secondary btn-sm" id="tba-update">
                         <span class="material-icons">
                             sync
                         </span>
                     </button>
-                </div>
+                </div> -->
             </div>
 
 
@@ -208,7 +208,7 @@
     <!-- Main part of the site -->
     <main>
         <repeat id="pagesRepeat">
-            <div class="container-fluid page pt-5 bg-light" id="{{ lowercaseTitle }}">
+            <div class="container-fluid page pt-5 bg-light d-none" id="{{ lowercaseTitle }}">
                 <div class="row mb-3">
                     <h1 class="text-capitalize no-select">{{ title }}</h1>
                 </div>

@@ -591,9 +591,9 @@ type CustomResponse = Response & {
  * @param {FileStreamOptions} opts
  * @returns {(req: any, res: any, next: any) => unknown}
  */
-export const fileStream = (opts: FileStreamOptions) => {
-    return async(req: CustomHeaderRequest, res: CustomResponse, next: NextFunction) => {
-        let { maxFileSize, extensions } = opts;
+export const fileStream = (opts?: FileStreamOptions): NextFunction => {
+    const fn = async(req: CustomHeaderRequest, res: CustomResponse, next: NextFunction) => {
+        let { maxFileSize, extensions } = opts || {};
         maxFileSize = maxFileSize || 1000000;
 
         const generateFileId = () => {
@@ -647,7 +647,8 @@ export const fileStream = (opts: FileStreamOptions) => {
                 size: fileSize,
                 type: fileType,
                 ext: fileExt,
-                contentType
+                contentType,
+                filename: fileId + fileExt
             }
             next();
         });
@@ -660,6 +661,8 @@ export const fileStream = (opts: FileStreamOptions) => {
             })
         });
     }
+
+    return fn as unknown as NextFunction;
 }
 
 

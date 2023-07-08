@@ -4,7 +4,7 @@
 }
 
 .sidebar-nav {
-    width: var(--offCanvas-width);
+    width: var(--offCanvas-width) !important;
     z-index: 1041;
 }
 
@@ -25,17 +25,17 @@
         overflow: auto !important;
     }
     .offcanvas-backdrop::before {
-        display: none;
+        display: none !important;
     }
     main {
-        margin-left: var(--offCanvas-width);
-        /* width: calc(100vw - var(--offCanvas-width) - 24px) !important; */
+        margin-left: var(--offCanvas-width) !important;
+        width: calc(100vw - var(--offCanvas-width) - 24px) !important;
     }
     .sidebar-nav {
-        transform: none;
+        transform: none !important;
         visibility: visible !important;
-        top: var(--topNavbarHeight);
-        height: calc(100% - var(--topNavbarHeight));
+        top: var(--topNavbarHeight) !important;
+        height: calc(100% - var(--topNavbarHeight)) !important;
     }
     #navbarSupportedContent {
         padding-top: 0 !important;

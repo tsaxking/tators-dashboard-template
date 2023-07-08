@@ -19,6 +19,15 @@ declare global {
             session: Session;
             start: number;
             io: Server;
+            file: {
+                id: string;
+                name: string;
+                size: number;
+                type: string;
+                ext: string;
+                contentType: string;
+                filename: string
+            }
         }
     }
 }
@@ -235,7 +244,7 @@ app.use((req, res, next) => {
 
 
 import admin from './server-functions/routes/admin';
-import { getTemplateSync, getJSON, LogType, log, getTemplate } from './server-functions/files';
+import { getTemplateSync, getJSON, LogType, log, getTemplate, fileStream, getUpload } from './server-functions/files';
 app.use('/admin', admin);
 
 
@@ -272,29 +281,16 @@ type Page = {
 };
 
 
-app.get('/get-links', async (req, res) => {
-    const pages = await getJSON('pages') as Page[];
 
-    // at this point, account should exist because of the middleware above
-    const permissions = await req.session.account?.getPermissions();
-
-    let links: any[] = [];
-    pages.forEach(page => {
-        links = [
-            ...links,
-            ...page.links.filter(l => {
-                if (l.permission) {
-                    // console.log(l.permission, permissions[l.permission]);
-                    return permissions ? permissions[l.permission] : false; 
-                } else return l.display;
-            })
-        ];
-    });
-    res.json(links.filter(l => l.display));
+app.get('/', (req, res) => {
+    res.redirect('/dashboard');
 });
 
 
 
+app.use('/404', (req, res) => {
+    Status.from('page.notFound', req).send(res);
+});
 
 
 
@@ -304,12 +300,14 @@ app.get('/get-links', async (req, res) => {
 app.get('/*', Account.isSignedIn, async (req, res, next) => {
     const permissions = await req.session.account?.getPermissions();
 
-    if (permissions?.permissions.includes('logs')) {
-        req.session.socket?.join('logs');
-    }
+    // if (permissions?.permissions.includes('logs')) {
+    //     req.session.getSocket(req)?.join('logs');
+    // }
 
 
     const pages = await getJSON('pages') as Page[];
+
+    pages.map(p => p.links).some(linkList => linkList.some(l => l.pathname === req.originalUrl)) || res.redirect('/404');
 
     const cstr = {
         pagesRepeat: pages.map(page => {
@@ -363,10 +361,11 @@ app.get('/*', Account.isSignedIn, async (req, res, next) => {
 
 
 
+app.post('file', fileStream(), (req, res, next) => {
+    req.file;
 
-
-
-
+    getUpload(req.file?.filename);
+});
 
 
 

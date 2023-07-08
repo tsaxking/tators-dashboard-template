@@ -39,7 +39,7 @@ class ServerRequest {
 
 
 
-    static async new(url: string, body: any, options?: RequestOptions): Promise<any> {
+    static async new(url: string, body?: any, options?: RequestOptions): Promise<any> {
         try {
             JSON.stringify(body);
         } catch {

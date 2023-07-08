@@ -55,11 +55,12 @@
                 "[ts]../static/js/submodules/custom-bootstrap/src",
 
                 // all js files in these folders (no ts)
-                "[ts]../static/js/top",
+                "[ts]../static/js/0 - top",
                 "[ts]../static/js/classes",
                 "[ts]../static/js/pre-page",
                 "[ts]../static/js/pages",
-                "[ts]../static/js/bottom"
+                "[ts]../static/js/bottom",
+                "[ts]../static/js/page-permissions"
 
                 // specific files
             ]

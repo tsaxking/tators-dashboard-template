@@ -7,7 +7,6 @@ type StreamOptions = {
 
 
 function fileStream(url: string, files: FileList, options: StreamOptions = {}): Promise<void> {
-
     return new Promise(async (res, rej) => {
         if (typeof url !== 'string') 
             return res(
