@@ -117,24 +117,26 @@ const fromTsDir = async (dirPath: string): Promise<void> => {
 let server: Worker;
 
 const newServer = async () => {
-    if (server) server.terminate();
-    await Promise.all([
-        runTs('./server.ts')
-    ]);
+    try {
+        if (server) server.terminate();
+        await Promise.all([
+            runTs('./server.ts')
+        ]);
 
-    server = new Worker(path.resolve(__dirname, 'server.js'), {
-        workerData: {
-            mode: process.argv[2],
-            args: process.argv.slice(3),
-            builds: renderedBuilds
-        }
-    });
+        server = new Worker(path.resolve(__dirname, 'server.js'), {
+            workerData: {
+                mode: process.argv[2],
+                args: process.argv.slice(3),
+                builds: renderedBuilds
+            }
+        });
 
-    server.on('error', (err) => {
-        console.log('Server error:', err);
-        console.log('Please make changes and save to restart the server.');
-        server.terminate();
-    });
+        server.on('error', (err) => {
+            // console.log('Server error:', err);
+            console.log('Please make changes and save to restart the server.');
+            // server.terminate();
+        });
+    } catch (err) {}
 }
 
 const build = async() => {
@@ -256,7 +258,7 @@ const runTs = async (fileName: string): Promise<void> => {
     const exitCode = emitResult.emitSkipped ? 1 : 0;
 
     if (exitCode !== 0) {
-        throw new Error('There was an error compiling the project');
+        console.error(new Error('There was an error compiling the project'));
     }
 
     return;
@@ -265,7 +267,6 @@ const runTs = async (fileName: string): Promise<void> => {
 (async() => {
     if (isMainThread) {
         await Promise.all([
-            fromTsDir('./server-functions'),
             runTs('./build/build.ts'),
             runTs('./build/server-update.ts')
         ]);

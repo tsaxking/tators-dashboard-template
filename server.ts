@@ -361,14 +361,6 @@ app.get('/*', Account.isSignedIn, async (req, res, next) => {
 
 
 
-app.post('file', fileStream(), (req, res, next) => {
-    req.file;
-
-    getUpload(req.file?.filename);
-});
-
-
-
 
 
 

@@ -2,6 +2,8 @@ type RequestOptions = {
     headers?: {
         [key: string]: string;
     };
+
+    cached: boolean;
 };
 
 
@@ -40,14 +42,12 @@ class ServerRequest {
 
 
     static async new(url: string, body?: any, options?: RequestOptions): Promise<any> {
-        try {
-            JSON.stringify(body);
-        } catch {
-            throw new Error('Body must be able to be parsed as JSON');
-        }
-
         const r = new ServerRequest(url, body, options);
         return r.send();
+    }
+
+    static async multiple(requests: ServerRequest[]): Promise<any[]> {
+        return Promise.all(requests.map((r) => r.send()));
     }
 
     public response?: any;
@@ -68,8 +68,24 @@ class ServerRequest {
 
     async send(): Promise<any> {
         return new Promise((res, rej) => {
+            try {
+                JSON.stringify(this.body);
+            } catch {
+                throw new Error('Body must be able to be parsed as JSON');
+            }
             const start = Date.now();
             this.sent = true;
+
+            if (this.options?.cached) {
+                const req = ServerRequest.all.findLast((r) => r.url == this.url);
+                if (req) {
+                    this.duration = Date.now() - start;
+                    this.response = req.response;
+                    return res(req.response);
+                }
+            }
+
+
             fetch(this.url, {
                 method: 'POST',
                 headers: {
