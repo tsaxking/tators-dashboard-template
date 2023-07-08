@@ -460,7 +460,11 @@ export const buildServerFunctions = async (): Promise<void> => {
             child.on('error', console.error);
             child.stdout.on('data', console.log);
             child.stderr.on('data', console.error);
-            child.on('close', () => {
+            child.on('exit', (code) => {
+                if (code !== 0) {
+                    console.error('Error building server functions');
+                }
+
                 res();
             });
         } catch { res(); }
