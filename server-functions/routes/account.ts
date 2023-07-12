@@ -20,34 +20,35 @@ router.post('/get-roles', async(req, res) => {
     res.json(await Role.all());
 });
 
+router.get('/sign-in', async (req, res) => {
+    res.send(await getTemplate('account/sign-in'));
+});
 
-// sign in page (sign up is the same)
-const getSignIn = async (req: Request, res: Response) => {
-    const html = await getTemplate('account/sign-in');
-    res.send(html);
-}
-
-router.get('/sign-in', Account.notSignedIn, getSignIn as unknown as NextFunction);
-router.get('/sign-up', Account.notSignedIn, getSignIn as unknown as NextFunction);
-
-
-
+router.get('/sign-up', async (req, res) => {
+    res.send(await getTemplate('account/sign-up'));
+});
 
 router.post('/sign-in', Account.notSignedIn, async(req, res) => {
-    const { username, password } = req.body;
+    const { 
+        'Username or Email': username,
+        'Password': password
+    } = req.body;
 
     const account = await Account.fromUsername(username);
 
     // send the same error for both username and password to prevent username enumeration
-    if (!account) return Status.from('account.invalidUsernameOrPassword', req, { username }).send(res);
+    if (!account) return Status.from('account.invalidUsernameOrPassword', req, { username: username }).send(res);
 
     const hash = Account.hash(password, account.salt);
-    if (hash !== account.key) return Status.from('account.invalidUsernameOrPassword', req, { username }).send(res);
-    if (!account.verified) return Status.from('account.notVerified', req, { username }).send(res);
+    if (hash !== account.key) 
+        return Status
+            .from('account.invalidUsernameOrPassword', req, { username: username })
+            .send(res);
+    if (!account.verified) return Status.from('account.notVerified', req, { username: username }).send(res);
 
     req.session.signIn(account);
 
-    Status.from('account.loggedIn', req, { username }).send(res);
+    Status.from('account.loggedIn', req, { username: username }).send(res);
 });
 
 
@@ -56,11 +57,11 @@ router.post('/sign-in', Account.notSignedIn, async(req, res) => {
 
 router.post('/sign-up', Account.notSignedIn, async(req, res) => {
     const {
-        username,
-        password,
-        confirmPassword,
-        name,
-        email
+        'Username': username,
+        'Password': password,
+        'Confirm Password': confirmPassword,
+        'Name': name,
+        'Email': email
     } = req.body;
 
     if (password !== confirmPassword) return Status.from('account.passwordMismatch', req).send(res);

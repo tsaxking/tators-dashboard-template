@@ -96,6 +96,13 @@ class ServerRequest {
             })
                 .then((r) => r.json())
                 .then((data) => {
+                    if (data?.status) {
+                        // this is a notification
+
+                        CBS.alert(`${data.status}: ${data.message}`);
+                    }
+
+
                     this.duration = Date.now() - start;
                     this.response = data;
                     res(data);

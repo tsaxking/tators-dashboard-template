@@ -194,10 +194,10 @@ app.use((req, res, next) => {
 
 app.post('/*', emailValidation(['email', 'confirmEmail'], {
     onspam: (req, res, next) => {
-        res.json({ error: 'spam' });
+        Status.from('spam', req).send(res);
     },
     onerror: (req, res, next) => {
-        res.json({ error: 'error' });
+        Status.from('spam', req).send(res);
     }
 }));
 

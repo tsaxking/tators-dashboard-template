@@ -190,5 +190,12 @@
         "status": "error",
         "code": 404,
         "instructions": "The page you are looking for does not exist."
+    },
+    "spam": {
+        "title": "Spam",
+        "message": "Spam",
+        "status": "error",
+        "code": 403,
+        "instructions": "That request was blocked because it was detected as spam. If you believe this is a mistake, please contact us."
     }
 }
